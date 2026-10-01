@@ -41,7 +41,8 @@ export class LapTracker {
     startS = 0,
   ) {
     this.lastS = startS;
-    this.progress = startS;
+    // Grid sits just behind the line: start with a small negative progress.
+    this.progress = wrapDelta(startS, path.length);
   }
 
   get lap(): number {

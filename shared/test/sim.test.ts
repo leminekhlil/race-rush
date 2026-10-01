@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { ArcadeVehicle, AutoPilot, LapTracker, getTrackPath, tunedVehicle, VEHICLE_IDS, TRACK_IDS } from '../src';
+import { ArcadeVehicle, AutoPilot, LapTracker, getTrackPath, gridSlot, tunedVehicle, VEHICLE_IDS, TRACK_IDS } from '../src';
 
 const DT = 1 / 60;
 
 const runRace = (trackId: string, vehicleId: (typeof VEHICLE_IDS)[number], laps = 3, skill = 1, pace = 1) => {
   const path = getTrackPath(trackId);
-  const car = new ArcadeVehicle(path, tunedVehicle(vehicleId), path.def.gridOffset, 0);
+  const car = new ArcadeVehicle(path, tunedVehicle(vehicleId), gridSlot(path, 0).s, 0);
   const pilot = new AutoPilot(car, { skill, lane: 0, seed: 7, useBoost: true });
   pilot.pace = pace;
   const tracker = new LapTracker(path, laps, car.state.s);

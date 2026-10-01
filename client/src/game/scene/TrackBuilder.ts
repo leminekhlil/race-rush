@@ -17,12 +17,15 @@ import {
   barrierTexture,
   checkerTexture,
   chevronTexture,
+  crownBannerTexture,
   curbTexture,
   facadeTexture,
   groundTexture,
   rampTexture,
+  roadSignTexture,
   roadTexture,
   skyTexture,
+  startSignTexture,
 } from './textures';
 
 const BARRIER_H = 1.1;
@@ -168,7 +171,7 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
       extrudeAlongTrack(barriers, path, { offsets, heights: () => h, us: [0, 1], vLength: 8 });
     }
   }
-  const barrierMat = mat(scene, 'barrierMat', '#ffffff', { emissive: desert ? '#000000' : '#0a1a40' });
+  const barrierMat = mat(scene, 'barrierMat', '#ffffff', { emissive: '#1a1a1a' });
   barrierMat.diffuseTexture = barrierTexture(scene, pal.barrierA, pal.barrierB);
   barriers.build('barriers', scene, barrierMat, false);
 
@@ -232,46 +235,47 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
   });
   line.build('finishLine', scene, checkerMat, false);
 
+  // Start/finish gantry over the checkered line, traffic light facing the grid (start reference).
   const startLights: StandardMaterial[] = [];
-  const gantry = (s: number, text: string, sub: string, withLights: boolean) => {
-    const smp = path.sampleAt(s);
-    const off = path.barrierOffset(s) + 0.9;
-    const y0 = path.baseHeight(s);
-    const frameMat = mat(scene, `gantryFrame-${text}`, '#1b2a55', { spec: 0.3 });
+  {
+    const smp = path.sampleAt(0);
+    const off = path.barrierOffset(0) + 0.9;
+    const y0 = path.baseHeight(0);
+    const frameMat = mat(scene, 'gantryFrame', desert ? '#7a4a24' : '#2b3038', { spec: 0.25 });
     for (const side of [-1, 1]) {
-      const p = CreateBox(`gantryLeg-${text}`, { width: 1, height: 9, depth: 1 }, scene);
+      const p = CreateBox('gantryLeg', { width: 1, height: 9, depth: 1 }, scene);
       p.position.set(smp.x + smp.rx * off * side, y0 + 4.5, smp.z + smp.rz * off * side);
       p.material = frameMat;
       p.freezeWorldMatrix();
     }
-    const beam = CreateBox(`gantryBeam-${text}`, { width: off * 2 + 1, height: 2.6, depth: 0.8 }, scene);
+    const beam = CreateBox('gantryBeam', { width: off * 2 + 1, height: 2.6, depth: 0.8 }, scene);
     beam.position.set(smp.x, y0 + 8.2, smp.z);
     beam.rotation.y = smp.heading;
     beam.material = frameMat;
+    const signMat = mat(scene, 'startSignMat', '#000000', { unlit: true });
+    signMat.emissiveTexture = startSignTexture(scene);
     for (const face of [-1, 1]) {
-      const banner = CreatePlane(`banner-${text}`, { width: off * 2 - 1, height: 2.2 }, scene);
+      const banner = CreatePlane('startSign', { width: off * 2 - 0.6, height: 2.3 }, scene);
       banner.parent = beam;
       banner.position.z = 0.41 * face;
       banner.rotation.y = face > 0 ? Math.PI : 0;
-      banner.scaling.x = -1; // canvas text is drawn mirrored relative to the plane UVs
-      const bm = mat(scene, `bannerMat-${text}`, '#000000', { unlit: true });
-      bm.emissiveTexture = bannerTexture(scene, text, '#0a1a4a', '#ffc61a', sub);
-      banner.material = bm;
+      banner.material = signMat;
     }
-    if (withLights) {
-      for (let i = 0; i < 3; i++) {
-        const lm = mat(scene, `startLight${i}`, '#220000', { emissive: '#200000' });
-        const lamp = CreateCylinder(`startLamp${i}`, { diameter: 1.1, height: 0.3, tessellation: 16 }, scene);
-        lamp.parent = beam;
-        lamp.rotation.x = Math.PI / 2;
-        lamp.position.set((i - 1) * 1.6, -1.75, -0.2);
-        lamp.material = lm;
-        startLights.push(lm);
-      }
+    // Traffic light housing under the sign, lamps facing the cars on the grid (behind the line).
+    const housing = CreateBox('trafficLight', { width: 4.6, height: 1.5, depth: 0.7 }, scene);
+    housing.parent = beam;
+    housing.position.set(0, -2.05, -0.1);
+    housing.material = mat(scene, 'trafficMat', '#111318', { spec: 0.4 });
+    for (let i = 0; i < 3; i++) {
+      const lm = mat(scene, `startLight${i}`, '#220000', { emissive: '#2a0000' });
+      const lamp = CreateCylinder(`startLamp${i}`, { diameter: 1.05, height: 0.3, tessellation: 18 }, scene);
+      lamp.parent = housing;
+      lamp.rotation.x = Math.PI / 2;
+      lamp.position.set((i - 1) * 1.45, 0, -0.38);
+      lamp.material = lm;
+      startLights.push(lm);
     }
-  };
-  gantry(0, 'RACE RUSH', 'START · FINISH', false);
-  gantry(path.def.gridOffset + 16, 'RACE RUSH', 'GO GO GO', true);
+  }
 
   // Checkpoint light strips (subtle feedback when crossing).
   const cpMat = mat(scene, 'cpMat', '#000000', { emissive: desert ? '#ff8a3d' : '#1fb7ff', unlit: true });
@@ -318,11 +322,11 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
   const pole = new GeometryBatch();
   pole.box(0, 4.5, 0, 0.3, 9, 0.3, 0, null);
   pole.box(0, 8.9, 1.6, 0.25, 0.25, 3.4, 0, null);
-  const poleMesh = pole.build('lampPole', scene, mat(scene, 'poleMat', desert ? '#5b3b22' : '#2b3550', { spec: 0.3 }), false);
+  const poleMesh = pole.build('lampPole', scene, mat(scene, 'poleMat', desert ? '#5b3b22' : '#c3c8d0', { spec: 0.3 }), false);
   poleMesh.unfreezeWorldMatrix();
   const head = CreateBox('lampHead', { width: 0.7, height: 0.2, depth: 1.2 }, scene);
   head.bakeTransformIntoVertices(Matrix.Translation(0, 8.75, 3.1));
-  head.material = mat(scene, 'lampHeadMat', '#000000', { emissive: desert ? '#ffb347' : '#cfe8ff', unlit: true });
+  head.material = mat(scene, 'lampHeadMat', '#e9eef5', { emissive: '#3a3f48' });
   head.isPickable = false;
   const lampBuf = new Float32Array(lampMatrices);
   poleMesh.thinInstanceSetBuffer('matrix', lampBuf, 16, true);
@@ -352,11 +356,13 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
     chev.thinInstanceSetBuffer('matrix', new Float32Array(chevMatrices), 16, true);
   }
 
+  buildBannersAndSigns(scene, path, desert);
+  buildPalms(scene, path, rng, clearOf, desert ? 0.25 * decorDensity : decorDensity);
   if (desert) buildDesertDecor(scene, path, rng, clearOf, decorDensity, minX, maxX, minZ, maxZ, animated);
   else buildCityDecor(scene, path, rng, clearOf, decorDensity, minX, maxX, minZ, maxZ, animated);
 
   // Billboards near the track.
-  const boards = desert ? ['DUNE CANYON', 'RACE RUSH', 'v-MRU'] : ['RACE RUSH', 'BOOST!', 'v-MRU', 'NEON CITY'];
+  const boards = desert ? ['DUNE CANYON', 'RACE RUSH', 'v-MRU'] : ['RACE RUSH', 'BOOST!', 'v-MRU', 'PALM CITY'];
   let bi = 0;
   for (let s = 140; s < path.length - 60; s += 230) {
     const smp = path.sampleAt(s);
@@ -366,13 +372,17 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
     const z = smp.z + smp.rz * off;
     if (!clearOf(x, z, 3)) continue;
     const text = boards[bi++ % boards.length];
-    const board = CreatePlane(`board-${bi}`, { width: 14, height: 3.5, sideOrientation: Mesh.DOUBLESIDE }, scene);
-    board.position.set(x, 9, z);
-    board.rotation.y = smp.heading + (side > 0 ? Math.PI / 2 : -Math.PI / 2) + (side > 0 ? -0.5 : 0.5);
     const bm = mat(scene, `boardMat-${bi}`, '#000000', { unlit: true });
-    bm.emissiveTexture = bannerTexture(scene, text, '#0a1a4a', '#ffc61a');
-    board.material = bm;
-    board.freezeWorldMatrix();
+    bm.emissiveTexture = desert ? bannerTexture(scene, text, '#7a2e12', '#ffe0a6', undefined, '#c2532a') : bannerTexture(scene, text, '#b0145f', '#ffffff', undefined, '#ff4fa3');
+    const yaw = smp.heading + (side > 0 ? Math.PI / 2 : -Math.PI / 2) + (side > 0 ? -0.5 : 0.5);
+    // Two single-sided faces so the text reads correctly from both directions.
+    for (const flip of [0, Math.PI]) {
+      const board = CreatePlane(`board-${bi}`, { width: 14, height: 3.5 }, scene);
+      board.position.set(x, 9, z);
+      board.rotation.y = yaw + flip;
+      board.material = bm;
+      board.freezeWorldMatrix();
+    }
     const legs = CreateBox(`boardLeg-${bi}`, { width: 0.5, height: 8, depth: 0.5 }, scene);
     legs.position.set(x, 4, z);
     legs.material = poleMesh.material;
@@ -410,16 +420,15 @@ const buildCityDecor = (
   const facade = facadeTexture(scene);
   const bMat = new StandardMaterial('buildingMat', scene);
   bMat.diffuseTexture = facade;
-  bMat.emissiveTexture = facade;
-  bMat.emissiveColor = new Color3(0.55, 0.55, 0.6);
-  bMat.specularColor = new Color3(0.05, 0.05, 0.08);
-  const tints = ['#7f8db3', '#9aa3bd', '#6b7aa6', '#a7a1c9', '#8095c4', '#b0b8cc'].map((h) => Color3.FromHexString(h));
+  bMat.emissiveColor = new Color3(0.12, 0.12, 0.13);
+  bMat.specularColor = new Color3(0.08, 0.08, 0.1);
+  // Pastel tropical facades + a few glass towers in the distance.
+  const tints = ['#f4a259', '#f28fad', '#6cc6c9', '#f3e2bd', '#7fb0e6', '#b7a4e0', '#f6d36b', '#ffffff'].map((h) => Color3.FromHexString(h));
+  const glass = Color3.FromHexString('#6f9fd8');
   const batch = new GeometryBatch();
-  const neon = new GeometryBatch();
-  const neonColors = ['#1fb7ff', '#ff3d8b', '#ffc61a', '#7d3cff'].map((h) => Color3.FromHexString(h));
+  const roofs = new GeometryBatch();
   const cell = 30;
   const margin = 220;
-  const beacons: { x: number; y: number; z: number }[] = [];
   for (let x = minX - margin; x <= maxX + margin; x += cell) {
     for (let z = minZ - margin; z <= maxZ + margin; z += cell) {
       if (rng() > 0.82 * density + 0.1) continue;
@@ -431,72 +440,130 @@ const buildCityDecor = (
       if (!clearOf(px, pz, radius)) continue;
       const p = path.project(px, pz);
       const distToTrack = Math.abs(p.lateral);
-      const tall = distToTrack > 90 ? 30 + rng() * 60 : 12 + rng() * 26;
+      const far = distToTrack > 90;
+      const tall = far ? 30 + rng() * 60 : 10 + rng() * 22;
       const yaw = Math.atan2(path.txs[p.index], path.tzs[p.index]) + (rng() < 0.5 ? 0 : Math.PI / 2);
-      const tint = tints[Math.floor(rng() * tints.length)];
+      const tint = far && rng() < 0.5 ? glass : tints[Math.floor(rng() * tints.length)];
       batch.box(px, tall / 2, pz, sx, tall, sz, yaw, tint, 1 / 6.5);
-      if (rng() < 0.35) {
-        const nc = neonColors[Math.floor(rng() * neonColors.length)];
-        neon.box(px, tall + 0.25, pz, sx + 0.4, 0.5, sz + 0.4, yaw, nc);
-      }
-      if (tall > 55 && beacons.length < 24) beacons.push({ x: px, y: tall + 1.5, z: pz });
+      // Roof parapet / water tank details.
+      roofs.box(px, tall + 0.3, pz, sx + 0.3, 0.6, sz + 0.3, yaw, Color3.FromHexString('#e9e4da'));
+      if (rng() < 0.3) roofs.box(px + (rng() - 0.5) * sx * 0.4, tall + 1.4, pz, 2.4, 2.2, 2.4, yaw, Color3.FromHexString('#9aa2ad'));
     }
   }
   batch.build('buildings', scene, bMat, true);
-  if (neon.vertexCount) {
-    const nm = new StandardMaterial('neonMat', scene);
-    nm.disableLighting = true;
-    nm.emissiveColor = new Color3(1, 1, 1);
-    neon.build('neonRims', scene, nm, true);
-  }
+  const rm = new StandardMaterial('roofMat', scene);
+  rm.specularColor = Color3.Black();
+  roofs.build('roofs', scene, rm, true);
+  void animated;
+};
 
-  // Blinking aviation beacons on skyscrapers (environment animation).
-  if (beacons.length) {
-    const beaconMat = new StandardMaterial('beaconMat', scene);
-    beaconMat.disableLighting = true;
-    beaconMat.emissiveColor = new Color3(1, 0.15, 0.15);
-    const b = CreateBox('beacon', { size: 0.9 }, scene);
-    b.material = beaconMat;
-    b.isPickable = false;
-    const m: number[] = [];
-    for (const p of beacons) Matrix.Translation(p.x, p.y, p.z).copyToArray(m, m.length);
-    b.thinInstanceSetBuffer('matrix', new Float32Array(m), 16, true);
-    animated.push((_dt, t) => {
-      b.visibility = Math.sin(t * 3.2) > 0.2 ? 1 : 0.08;
-    });
-  }
-
-  // Street trees in planters.
-  const trees: number[] = [];
-  for (let i = 0; i < 160 * density; i++) {
-    const s = rng() * path.length;
-    const side = rng() < 0.5 ? -1 : 1;
+/** Pink crown banners on poles + green overhead "RACE RUSH" signs (city) along the circuit. */
+const buildBannersAndSigns = (scene: Scene, path: TrackPath, desert: boolean) => {
+  const bannerMat = new StandardMaterial('crownBannerMat', scene);
+  bannerMat.diffuseTexture = crownBannerTexture(scene);
+  bannerMat.emissiveColor = new Color3(0.45, 0.45, 0.45);
+  bannerMat.specularColor = Color3.Black();
+  bannerMat.backFaceCulling = false;
+  const poleM: number[] = [];
+  const flagM: number[] = [];
+  const place = (s: number, side: number) => {
     const smp = path.sampleAt(s);
-    const off = (path.barrierOffset(s) + 6 + rng() * 10) * side;
+    const off = (path.barrierOffset(s) + 1.1) * side;
+    const y = path.baseHeight(s);
     const x = smp.x + smp.rx * off;
     const z = smp.z + smp.rz * off;
-    if (!clearOf(x, z, 1.5)) continue;
-    const sc = 0.8 + rng() * 0.6;
-    Matrix.Compose(new Vector3(sc, sc, sc), Quaternion.Identity(), new Vector3(x, 0, z)).copyToArray(trees, trees.length);
+    Matrix.Translation(x, y, z).copyToArray(poleM, poleM.length);
+    // Banner faces the road (plane normal along the track's right vector).
+    Matrix.Compose(new Vector3(1, 1, 1), Quaternion.FromEulerAngles(0, smp.heading + Math.PI / 2, 0), new Vector3(x, y + 5.2, z)).copyToArray(flagM, flagM.length);
+  };
+  // Dense around the start, sparser elsewhere.
+  for (let s = -70; s <= 70; s += 14) for (const side of [-1, 1]) place(path.wrap(s), side);
+  for (let s = 140; s < path.length - 120; s += desert ? 160 : 85) place(s, Math.floor(s / 85) % 2 ? 1 : -1);
+  const pole = CreateCylinder('bannerPole', { height: 7.4, diameter: 0.18, tessellation: 6 }, scene);
+  pole.bakeTransformIntoVertices(Matrix.Translation(0, 3.7, 0));
+  const pm = new StandardMaterial('bannerPoleMat', scene);
+  pm.diffuseColor = Color3.FromHexString(desert ? '#6b4423' : '#cfd4dc');
+  pole.material = pm;
+  pole.thinInstanceSetBuffer('matrix', new Float32Array(poleM), 16, true);
+  const flag = CreatePlane('crownBanner', { width: 1.7, height: 3.4 }, scene);
+  flag.material = bannerMat;
+  flag.thinInstanceSetBuffer('matrix', new Float32Array(flagM), 16, true);
+  pole.isPickable = flag.isPickable = false;
+  if (desert) return;
+
+  const signMat = new StandardMaterial('roadSignMat', scene);
+  signMat.emissiveTexture = roadSignTexture(scene, 'RACE RUSH');
+  signMat.disableLighting = true;
+  const frame = new StandardMaterial('signFrameMat', scene);
+  frame.diffuseColor = Color3.FromHexString('#8f969f');
+  for (const s of [path.length * 0.17, path.length * 0.58]) {
+    const smp = path.sampleAt(s);
+    const off = path.barrierOffset(s) + 0.8;
+    const y0 = path.baseHeight(s);
+    for (const side of [-1, 1]) {
+      const post = CreateBox('signPost', { width: 0.5, height: 8, depth: 0.5 }, scene);
+      post.position.set(smp.x + smp.rx * off * side, y0 + 4, smp.z + smp.rz * off * side);
+      post.material = frame;
+      post.freezeWorldMatrix();
+    }
+    const beam = CreateBox('signBeam', { width: off * 2, height: 0.4, depth: 0.4 }, scene);
+    beam.position.set(smp.x, y0 + 7.6, smp.z);
+    beam.rotation.y = smp.heading;
+    beam.material = frame;
+    const sign = CreatePlane('roadSign', { width: 9, height: 2.25 }, scene);
+    sign.parent = beam;
+    sign.position.set(0, -0.6, -0.25);
+    sign.material = signMat;
   }
-  if (trees.length) {
-    const trunk = CreateCylinder('trunk', { height: 3, diameterTop: 0.3, diameterBottom: 0.45, tessellation: 6 }, scene);
-    trunk.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0));
-    const tm = new StandardMaterial('trunkMat', scene);
-    tm.diffuseColor = Color3.FromHexString('#4a3524');
-    tm.specularColor = Color3.Black();
-    trunk.material = tm;
-    const crown = CreateIcoSphere('crown', { radius: 2.2, subdivisions: 1, flat: true }, scene);
-    crown.bakeTransformIntoVertices(Matrix.Translation(0, 4.4, 0));
-    const cm = new StandardMaterial('crownMat', scene);
-    cm.diffuseColor = Color3.FromHexString('#2f8f6a');
-    cm.emissiveColor = Color3.FromHexString('#06251c');
-    cm.specularColor = Color3.Black();
-    crown.material = cm;
-    const buf = new Float32Array(trees);
-    trunk.thinInstanceSetBuffer('matrix', buf, 16, true);
-    crown.thinInstanceSetBuffer('matrix', buf.slice(), 16, true);
+};
+
+/** Low-poly palm tree (curved segmented trunk + drooping fronds), thin-instanced along the road. */
+const buildPalms = (scene: Scene, path: TrackPath, rng: () => number, clearOf: ClearFn, density: number) => {
+  if (density <= 0) return;
+  const palm = new GeometryBatch();
+  const trunkA = Color3.FromHexString('#9a6b3d');
+  const trunkB = Color3.FromHexString('#7f5530');
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < 7; i++) {
+    const tilt = 0.05 + i * 0.035;
+    const segH = 1.15;
+    const m = Matrix.RotationZ(-tilt).multiply(Matrix.Translation(x, y + segH / 2, 0));
+    palm.orientedBox(m, 0.46 - i * 0.03, segH, 0.46 - i * 0.03, i % 2 ? trunkA : trunkB);
+    x += Math.sin(tilt) * segH;
+    y += Math.cos(tilt) * segH;
   }
+  const top = new Vector3(x, y, 0);
+  const greens = ['#2f9e44', '#3cb35a', '#258a3a'].map((h) => Color3.FromHexString(h));
+  for (let k = 0; k < 9; k++) {
+    const yaw = (k / 9) * Math.PI * 2;
+    const droop = 0.35 + (k % 3) * 0.12;
+    const m = Matrix.Translation(1.55, 0, 0).multiply(Matrix.RotationZ(-droop)).multiply(Matrix.RotationY(yaw)).multiply(Matrix.Translation(top.x, top.y, top.z));
+    palm.orientedBox(m, 3.2, 0.08, 0.85, greens[k % 3]);
+  }
+  for (let k = 0; k < 3; k++) {
+    const a = (k / 3) * Math.PI * 2;
+    palm.orientedBox(Matrix.Translation(top.x + Math.cos(a) * 0.25, top.y - 0.3, Math.sin(a) * 0.25), 0.3, 0.3, 0.3, Color3.FromHexString('#6b4423'));
+  }
+  const pm = new StandardMaterial('palmMat', scene);
+  pm.specularColor = Color3.Black();
+  pm.backFaceCulling = false;
+  const mesh = palm.build('palm', scene, pm, true);
+  mesh.unfreezeWorldMatrix();
+  const mats: number[] = [];
+  for (let s = 8; s < path.length; s += 17 / Math.max(0.3, density)) {
+    for (const side of [-1, 1]) {
+      const ss = s + (side > 0 ? 8 : 0) + rng() * 4;
+      const smp = path.sampleAt(ss);
+      const off = (path.barrierOffset(ss) + 5.5 + embankment(path.baseHeight(ss)) + rng() * 3) * side;
+      const px = smp.x + smp.rx * off;
+      const pz = smp.z + smp.rz * off;
+      if (!clearOf(px, pz, 1)) continue;
+      const sc = 0.85 + rng() * 0.45;
+      Matrix.Compose(new Vector3(sc, sc, sc), Quaternion.FromEulerAngles(0, rng() * Math.PI * 2, 0), new Vector3(px, 0, pz)).copyToArray(mats, mats.length);
+    }
+  }
+  if (mats.length) mesh.thinInstanceSetBuffer('matrix', new Float32Array(mats), 16, true);
 };
 
 const buildDesertDecor = (

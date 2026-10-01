@@ -146,6 +146,7 @@ export class RaceSession {
   private readonly onFrame = () => this.frame();
   private instrumentation: SceneInstrumentation | null = null;
   private props: PropsHandle | null = null;
+  private readonly tags: { tag: Mesh; node: import('@babylonjs/core/Meshes/transformNode').TransformNode; y: number }[] = [];
 
   constructor(
     private readonly host: EngineHost,
@@ -175,17 +176,18 @@ export class RaceSession {
 
     scene.clearColor = Color4.FromHexString(pal.fog + 'ff');
     scene.fogMode = Scene.FOGMODE_EXP2;
-    scene.fogDensity = q.fogDensity * (desert ? 0.6 : 1);
+    scene.fogDensity = q.fogDensity * (desert ? 0.6 : 0.7);
     scene.fogColor = Color3.FromHexString(pal.fog);
     scene.ambientColor = new Color3(0.2, 0.22, 0.3);
 
     const hemi = new HemisphericLight('hemi', new Vector3(0.2, 1, 0.1), scene);
-    hemi.intensity = desert ? 0.95 : 0.85;
-    hemi.diffuse = desert ? Color3.FromHexString('#fff1d8') : Color3.FromHexString('#c7d6ff');
-    hemi.groundColor = desert ? Color3.FromHexString('#8a6038') : Color3.FromHexString('#1b2440');
+    // Sunny daytime lighting for both maps (references).
+    hemi.intensity = desert ? 0.95 : 0.95;
+    hemi.diffuse = desert ? Color3.FromHexString('#fff1d8') : Color3.FromHexString('#ffffff');
+    hemi.groundColor = desert ? Color3.FromHexString('#8a6038') : Color3.FromHexString('#7d8798');
     this.sun = new DirectionalLight('sun', new Vector3(-0.45, -1, 0.35), scene);
-    this.sun.intensity = desert ? 1.15 : 0.75;
-    this.sun.diffuse = desert ? Color3.FromHexString('#ffe2b0') : Color3.FromHexString('#ffd2a8');
+    this.sun.intensity = desert ? 1.15 : 1.1;
+    this.sun.diffuse = desert ? Color3.FromHexString('#ffe2b0') : Color3.FromHexString('#fff4e0');
 
     this.track = buildTrack(scene, this.path, q.decorDensity);
     this.setLoading(0.5, 'Préparation des véhicules…');
@@ -247,7 +249,7 @@ export class RaceSession {
         const slot = gridSlot(this.path, entry.slot);
         const p = this.path.pointAt(slot.s, slot.lateral);
         const tag = this.makeTag(entry);
-        tag.parent = model.root;
+        this.tags.push({ tag, node: model.root, y: tag.position.y });
         this.remotes.set(entry.id, {
           info: entry,
           model,
@@ -262,9 +264,10 @@ export class RaceSession {
       }
     }
     if (!this.local) throw new Error('Local racer missing from grid');
+    // Name tags are not parented (billboards under a rotating parent can render mirrored): follow manually.
     for (const b of this.bots) {
       const tag = this.makeTag(b.info);
-      tag.parent = b.model.root;
+      this.tags.push({ tag, node: b.model.root, y: tag.position.y });
     }
     this.applyAllPoses(0);
     this.camera.update(0, this.local.vehicle.state, this.local.vehicle.tuning);
@@ -398,6 +401,7 @@ export class RaceSession {
 
     this.updateRemotes(dt);
     this.applyAllPoses(dt, alpha);
+    for (const t of this.tags) t.tag.position.set(t.node.position.x, t.node.position.y + t.y, t.node.position.z);
     this.props?.update();
     const st = this.local.vehicle.state;
     this.camera.update(dt, st, this.local.vehicle.tuning);

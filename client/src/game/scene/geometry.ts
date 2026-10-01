@@ -3,6 +3,7 @@ import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData';
 import type { Material } from '@babylonjs/core/Materials/material';
 import type { Scene } from '@babylonjs/core/scene';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
+import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { TrackPath } from '@race-rush/shared';
 
 /**
@@ -62,6 +63,29 @@ export class GeometryBatch {
     const t2 = this.vertex(p[2].x, y1, p[2].z, tu, tu, color);
     const t3 = this.vertex(p[3].x, y1, p[3].z, 0, tu, color);
     this.indices.push(t0, t1, t2, t0, t2, t3);
+  }
+
+  /** Unit box (centered) scaled to (sx, sy, sz) then transformed by `m`; flat-shaded faces. */
+  orientedBox(m: Matrix, sx: number, sy: number, sz: number, color: Color3 | null): void {
+    const hx = sx / 2;
+    const hy = sy / 2;
+    const hz = sz / 2;
+    const P = (x: number, y: number, z: number) => Vector3.TransformCoordinates(new Vector3(x, y, z), m);
+    const b = [P(-hx, -hy, -hz), P(hx, -hy, -hz), P(hx, -hy, hz), P(-hx, -hy, hz)];
+    const t = [P(-hx, hy, -hz), P(hx, hy, -hz), P(hx, hy, hz), P(-hx, hy, hz)];
+    const face = (a: Vector3, bb: Vector3, c: Vector3, d: Vector3) => {
+      const i0 = this.vertex(a.x, a.y, a.z, 0, 0, color);
+      const i1 = this.vertex(bb.x, bb.y, bb.z, 0.005, 0, color);
+      const i2 = this.vertex(c.x, c.y, c.z, 0.005, 0.005, color);
+      const i3 = this.vertex(d.x, d.y, d.z, 0, 0.005, color);
+      this.indices.push(i0, i1, i2, i0, i2, i3);
+    };
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4;
+      face(b[i], b[j], t[j], t[i]);
+    }
+    face(t[0], t[1], t[2], t[3]);
+    face(b[3], b[2], b[1], b[0]);
   }
 
   build(name: string, scene: Scene, material: Material | null, useColors = true): Mesh {

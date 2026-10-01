@@ -54,6 +54,15 @@ describe('lap tracker', () => {
     expect(checkMovement('sport', { x: path.xs[50], z: path.zs[50], t: 0 }, { ...path.pointAt(100 + L * 0.6, 0), t: 66 })?.kind).toBe('teleport');
   });
 
+  it('starts behind the line with negative progress and crossing the line is not a lap', () => {
+    const start = path.wrap(-20);
+    const t = new LapTracker(path, 3, start);
+    expect(t.progress).toBeCloseTo(-20, 0);
+    const ev = drive(t, -20, 40);
+    expect(ev.filter((e) => e.type === 'lap')).toHaveLength(0);
+    expect(t.progress).toBeGreaterThan(30);
+  });
+
   it('ranks finished racers by time, others by progress', () => {
     const r = rankRacers([
       { id: 'a', progress: 3000, finished: false, finishTime: null },

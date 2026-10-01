@@ -8,13 +8,13 @@ import { TrackPath } from './TrackPath';
  */
 export const CITY_TRACK: TrackDefinition = {
   id: 'city',
-  name: 'City — Neon Boulevard',
+  name: 'City — Palm Boulevard',
   theme: 'city',
   roadWidth: 17,
   shoulder: 3,
   checkpoints: 8,
   laps: 3,
-  gridOffset: 26,
+  gridOffset: 7,
   decorSeed: 1337,
   points: [
     { x: -150, z: 0, y: 0 },
@@ -40,15 +40,16 @@ export const CITY_TRACK: TrackDefinition = {
     { at: 0.355, length: 16, height: 1.5 },
     { at: 0.86, length: 14, height: 1.2 },
   ],
+  // Sunny tropical city (start / HUD references): blue sky, red & white barriers, light sidewalks.
   palette: {
-    sky: '#0b1a3a',
-    horizon: '#3b6fd8',
-    fog: '#1b2f5e',
-    ground: '#1c2333',
-    road: '#2a2f3a',
-    shoulder: '#596276',
-    barrierA: '#1e6bff',
-    barrierB: '#f2f5ff',
+    sky: '#2f7fe6',
+    horizon: '#bfe3ff',
+    fog: '#cfe6fb',
+    ground: '#b9b4a6',
+    road: '#454a54',
+    shoulder: '#d8d9dd',
+    barrierA: '#e23b3b',
+    barrierB: '#f7f7f7',
   },
 };
 
@@ -63,7 +64,7 @@ export const DESERT_TRACK: TrackDefinition = {
   shoulder: 4,
   checkpoints: 8,
   laps: 3,
-  gridOffset: 26,
+  gridOffset: 7,
   decorSeed: 4242,
   points: [
     { x: -120, z: -20, y: 0 },
@@ -85,9 +86,9 @@ export const DESERT_TRACK: TrackDefinition = {
     { at: 0.6, length: 16, height: 1.5 },
   ],
   palette: {
-    sky: '#3d7fd6',
-    horizon: '#f6c27a',
-    fog: '#e7b77a',
+    sky: '#2f86e8',
+    horizon: '#ffd9a0',
+    fog: '#f0cf9d',
     ground: '#d9a35f',
     road: '#8c6a45',
     shoulder: '#c9945a',
