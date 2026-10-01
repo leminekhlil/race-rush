@@ -117,7 +117,6 @@ interface Kit {
 const WHITE = C('#ffffff');
 const TRIM = C('#16181f');
 const STRIPE = C('#f4f6fb');
-const ORANGE = C('#ff8a1f');
 const RED_SPRING = C('#e23b3b');
 const SUIT = C('#15171d');
 
@@ -126,6 +125,8 @@ interface Blueprint {
   bodyRestY: number;
   exhausts: Vector3[];
   wheelsOnChassis?: boolean;
+  /** Black rims instead of silver (buggy reference). */
+  darkRims?: boolean;
   build(k: Kit): void;
 }
 
@@ -214,46 +215,73 @@ const BLUEPRINTS: Record<VehicleId, Blueprint> = {
       tail.box(0, 0.9, -1.01, 0.12, 0.06, 0.03, WHITE);
     },
   },
-  // Reference: yellow buggy, black roll cage, roof light bar, orange shocks, big rear tyres.
+  // Reference (09-buggy): yellow body, black hood stripe, black roll cage with a yellow roof panel,
+  // 3 big roof lamps, black bull bar with round headlights, chunky black tyres on black rims.
   buggy: {
-    bodyRestY: 0.12,
+    bodyRestY: 0.14,
+    darkRims: true,
     wheels: [
-      { x: -0.95, z: 1.3, r: 0.44, w: 0.34, front: true },
-      { x: 0.95, z: 1.3, r: 0.44, w: 0.34, front: true },
-      { x: -1.0, z: -1.15, r: 0.52, w: 0.46, front: false },
-      { x: 1.0, z: -1.15, r: 0.52, w: 0.46, front: false },
+      { x: -0.98, z: 1.3, r: 0.5, w: 0.4, front: true },
+      { x: 0.98, z: 1.3, r: 0.5, w: 0.4, front: true },
+      { x: -1.02, z: -1.15, r: 0.55, w: 0.48, front: false },
+      { x: 1.02, z: -1.15, r: 0.55, w: 0.48, front: false },
     ],
-    exhausts: [new Vector3(0.3, 1.05, -1.78)],
+    exhausts: [new Vector3(-0.3, 0.86, -1.86), new Vector3(0.3, 0.86, -1.86)],
     build({ paint, trim, light, tail, chrome }) {
-      trim.box(0, 0.48, 0, 1.3, 0.16, 3.2, TRIM);
-      paint.box(0, 0.68, 1.35, 1.4, 0.34, 0.9, WHITE, { tz: 0.6, shiftZ: -0.12 });
-      paint.box(-0.7, 0.68, -0.05, 0.14, 0.34, 1.7, WHITE);
-      paint.box(0.7, 0.68, -0.05, 0.14, 0.34, 1.7, WHITE);
-      paint.box(0, 1.05, -1.38, 1.0, 0.18, 0.8, WHITE);
-      // Black roll cage.
-      for (const x of [-0.6, 0.6]) {
-        trim.box(x, 1.25, 0.45, 0.09, 1.15, 0.09, TRIM, { pitch: -0.35 });
-        trim.box(x, 1.28, -0.65, 0.09, 1.2, 0.09, TRIM, { pitch: 0.18 });
-        trim.box(x, 1.84, -0.05, 0.09, 0.09, 1.15, TRIM);
+      // Floor pan + front nose and hood (sloped), black centre stripe.
+      trim.box(0, 0.5, 0, 1.34, 0.16, 3.3, TRIM);
+      paint.box(0, 0.74, 1.42, 1.5, 0.36, 0.95, WHITE, { tz: 0.7, shiftZ: -0.14 });
+      trim.box(0, 0.93, 1.36, 0.46, 0.03, 0.72, TRIM, { pitch: 0.12 });
+      // Side pods and fenders arching over the wheels.
+      paint.box(-0.74, 0.74, -0.05, 0.16, 0.42, 1.55, WHITE, { tz: 1.4 });
+      paint.box(0.74, 0.74, -0.05, 0.16, 0.42, 1.55, WHITE, { tz: 1.4 });
+      for (const x of [-0.98, 0.98]) {
+        paint.box(x * 0.97, 0.98, 1.3, 0.5, 0.1, 1.0, WHITE, { tz: 0.74 });
+        paint.box(x, 1.06, -1.15, 0.56, 0.1, 1.1, WHITE, { tz: 0.82 });
       }
-      trim.box(0, 1.84, 0.5, 1.28, 0.09, 0.09, TRIM);
-      trim.box(0, 1.84, -0.62, 1.28, 0.09, 0.09, TRIM);
-      // Roof light bar (4 lamps).
-      trim.box(0, 1.94, 0.46, 1.1, 0.1, 0.14, TRIM);
-      for (const x of [-0.39, -0.13, 0.13, 0.39]) light.box(x, 1.95, 0.54, 0.18, 0.13, 0.04, WHITE);
-      trim.box(0, 0.86, -0.15, 0.6, 0.6, 0.18, TRIM);
-      trim.box(0, 0.7, 0.15, 0.6, 0.14, 0.5, TRIM);
-      chrome.box(0, 0.85, -1.38, 0.8, 0.4, 0.6, WHITE);
-      chrome.box(0.3, 1.0, -1.74, 0.12, 0.12, 0.3, WHITE);
-      trim.box(0, 0.62, 1.9, 1.5, 0.1, 0.1, TRIM);
-      trim.box(-0.82, 0.86, 1.25, 0.1, 0.55, 0.1, ORANGE, { pitch: 0.2 });
-      trim.box(0.82, 0.86, 1.25, 0.1, 0.55, 0.1, ORANGE, { pitch: 0.2 });
-      trim.box(-0.85, 0.92, -1.1, 0.12, 0.6, 0.12, ORANGE);
-      trim.box(0.85, 0.92, -1.1, 0.12, 0.6, 0.12, ORANGE);
-      light.box(-0.42, 0.78, 1.82, 0.2, 0.14, 0.05, WHITE);
-      light.box(0.42, 0.78, 1.82, 0.2, 0.14, 0.05, WHITE);
-      tail.box(-0.55, 0.66, -1.66, 0.16, 0.1, 0.04, WHITE);
-      tail.box(0.55, 0.66, -1.66, 0.16, 0.1, 0.04, WHITE);
+      // Rear engine cover + tail.
+      paint.box(0, 0.98, -1.35, 1.36, 0.42, 0.9, WHITE, { tz: 0.7, shiftZ: 0.05 });
+      trim.box(0, 0.78, -1.82, 1.3, 0.22, 0.12, TRIM);
+      // Seats.
+      for (const x of [-0.32, 0.32]) {
+        trim.box(x, 0.78, -0.2, 0.44, 0.16, 0.5, TRIM);
+        trim.box(x, 1.12, -0.48, 0.44, 0.62, 0.12, TRIM, { pitch: 0.18 });
+      }
+      // Black roll cage with a yellow roof panel.
+      for (const x of [-0.64, 0.64]) {
+        trim.box(x, 1.3, 0.52, 0.09, 1.1, 0.09, TRIM, { pitch: -0.38 });
+        trim.box(x, 1.32, -0.72, 0.09, 1.16, 0.09, TRIM, { pitch: 0.2 });
+        trim.box(x, 1.88, -0.08, 0.09, 0.09, 1.2, TRIM);
+        trim.box(x, 1.02, 0.4, 0.07, 0.07, 0.9, TRIM, { pitch: 0.55 });
+      }
+      trim.box(0, 1.88, 0.52, 1.36, 0.09, 0.09, TRIM);
+      trim.box(0, 1.88, -0.68, 1.36, 0.09, 0.09, TRIM);
+      paint.box(0, 1.95, -0.08, 1.3, 0.06, 1.18, WHITE);
+      trim.box(0, 1.985, -0.08, 0.4, 0.02, 1.1, TRIM);
+      // Roof light bar: 3 big lamps with chrome bezels.
+      trim.box(0, 2.04, 0.5, 1.2, 0.08, 0.16, TRIM);
+      for (const x of [-0.4, 0, 0.4]) {
+        chrome.box(x, 2.22, 0.52, 0.3, 0.3, 0.12, WHITE);
+        light.box(x, 2.22, 0.59, 0.24, 0.24, 0.04, WHITE);
+      }
+      // Bull bar with round headlights.
+      trim.box(0, 0.64, 1.98, 1.56, 0.1, 0.1, TRIM);
+      trim.box(0, 1.0, 1.96, 1.2, 0.08, 0.08, TRIM);
+      for (const x of [-0.6, 0.6]) trim.box(x, 0.84, 1.96, 0.08, 0.42, 0.08, TRIM);
+      for (const x of [-0.42, 0.42]) {
+        chrome.box(x, 0.86, 1.9, 0.28, 0.28, 0.08, WHITE);
+        light.box(x, 0.86, 1.95, 0.22, 0.22, 0.04, WHITE);
+      }
+      trim.box(0, 0.86, 1.92, 0.26, 0.16, 0.04, TRIM);
+      // Shocks.
+      for (const x of [-0.84, 0.84]) {
+        chrome.box(x, 0.72, 1.22, 0.08, 0.4, 0.08, WHITE, { pitch: 0.2 });
+        chrome.box(x, 0.78, -1.08, 0.09, 0.44, 0.09, WHITE);
+      }
+      // Exhausts, tail lights.
+      for (const x of [-0.3, 0.3]) chrome.box(x, 0.86, -1.8, 0.12, 0.12, 0.2, WHITE);
+      tail.box(-0.52, 0.94, -1.83, 0.2, 0.14, 0.04, WHITE);
+      tail.box(0.52, 0.94, -1.83, 0.2, 0.14, 0.04, WHITE);
     },
   },
   // Reference: purple pickup, giant tyres, black fender flares, red springs, chrome bumper, roof light bar.
@@ -328,9 +356,9 @@ const materialsFor = (scene: Scene) => {
 };
 
 /** Black tyre with an inset silver rim on both sides (reference look). */
-const buildWheel = (scene: Scene, r: number, w: number, mat: StandardMaterial, name: string): Mesh => {
-  const rimC = new Color4(0.74, 0.77, 0.83, 1);
-  const hubC = new Color4(0.22, 0.24, 0.29, 1);
+const buildWheel = (scene: Scene, r: number, w: number, mat: StandardMaterial, name: string, darkRim = false): Mesh => {
+  const rimC = darkRim ? new Color4(0.16, 0.17, 0.2, 1) : new Color4(0.74, 0.77, 0.83, 1);
+  const hubC = darkRim ? new Color4(0.45, 0.47, 0.52, 1) : new Color4(0.22, 0.24, 0.29, 1);
   const tireC = new Color4(0.07, 0.075, 0.09, 1);
   const tess = r > 0.6 ? 18 : 14;
   const tire = CreateCylinder(`${name}-tire`, { diameter: r * 2, height: w, tessellation: tess, faceColors: [tireC, tireC, tireC] }, scene);
@@ -381,7 +409,7 @@ export const createVehicleModel = (scene: Scene, id: VehicleId, paintId: string,
     spin.parent = pivot;
     let mesh: Mesh;
     if (!template || template.metadata?.r !== w.r) {
-      template = buildWheel(scene, w.r, w.w, shared.tire, `veh-${name}-wheel`);
+      template = buildWheel(scene, w.r, w.w, shared.tire, `veh-${name}-wheel`, bp.darkRims);
       template.metadata = { r: w.r };
       mesh = template;
     } else {

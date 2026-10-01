@@ -15,7 +15,7 @@ import { createVehicleModel } from '../scene/VehicleFactory';
 const FRAMING: Record<VehicleId, { radius: number; y: number }> = {
   sport: { radius: 5.7, y: 0.55 },
   moto: { radius: 3.5, y: 0.85 },
-  buggy: { radius: 5.2, y: 0.95 },
+  buggy: { radius: 6.9, y: 1.1 },
   monster: { radius: 7.4, y: 1.55 },
 };
 
