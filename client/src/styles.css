@@ -205,6 +205,26 @@ body {
   animation: shine 2.6s ease-in-out infinite;
 }
 
+/* Countdown digits (reference "Départ de course"): yellow→orange, GO! in green. */
+.countdown-digit {
+  background: linear-gradient(180deg, #fff6a8 0%, #ffd03d 40%, #ff8a1f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 3px #3a1d00;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 6px 0 rgba(58, 29, 0, 0.55)) drop-shadow(0 0 24px rgba(255, 198, 26, 0.55));
+  padding: 0 0.08em;
+}
+
+.countdown-digit.countdown-go {
+  background: linear-gradient(180deg, #e9ffb0 0%, #7dff5a 40%, #19c94a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 3px #063a12;
+  filter: drop-shadow(0 6px 0 rgba(6, 58, 18, 0.55)) drop-shadow(0 0 28px rgba(61, 255, 106, 0.6));
+}
+
 .boost-bar {
   background: linear-gradient(90deg, #19e3ff, #1f6bff 45%, #ffc61a);
 }

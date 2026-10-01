@@ -99,21 +99,27 @@ export const RaceScreen = ({ config, net }: { config: RaceConfig; net: RaceNetAd
       {!session && <LoadingOverlay />}
       {session && (
         <>
-          <RaceHud session={session} compact={showTouch} />
+          <RaceHud
+            session={session}
+            compact={showTouch}
+            leading={
+              <button
+                type="button"
+                aria-label={config.mode === 'offline' ? 'Pause' : 'Quitter la course'}
+                onClick={() => (config.mode === 'offline' ? session.togglePause() : quit())}
+                data-testid="pause-button"
+                className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-xl border border-white/15 bg-night-950/75 text-base font-bold text-white/90 shadow-xl transition-transform duration-150 hover:bg-night-800 active:scale-90 tall:h-11 tall:w-11"
+              >
+                {config.mode === 'offline' ? 'II' : '✕'}
+              </button>
+            }
+          />
           {showTouch && phase !== 'results' && <TouchControls input={session.input} onRespawn={() => session.requestRespawn()} />}
           {!autoAccel && showTouch && (
-            <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-white/50">Accélération auto désactivée</div>
+            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-[10px] text-white/60" style={{ bottom: 'calc(88px + var(--safe-b))' }}>
+              Accélération auto désactivée
+            </div>
           )}
-          <button
-            type="button"
-            aria-label="Pause"
-            onClick={() => (config.mode === 'offline' ? session.togglePause() : quit())}
-            data-testid="pause-button"
-            className="glass-soft absolute flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-white/90 active:scale-90"
-            style={{ right: showTouch ? 'calc(116px + var(--safe-r))' : 'calc(156px + var(--safe-r))', top: 'calc(10px + var(--safe-t))' }}
-          >
-            {config.mode === 'offline' ? 'II' : '✕'}
-          </button>
           {paused && <PauseMenu session={session} onQuit={quit} />}
         </>
       )}
