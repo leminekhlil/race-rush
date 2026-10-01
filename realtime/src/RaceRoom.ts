@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import {
   ArcadeVehicle,
   AutoPilot,
+  botPace,
+  botSkill,
   checkMovement,
   COUNTDOWN_MS,
   FINISH_GRACE_MS,
@@ -48,11 +50,6 @@ interface Racer {
   respawnPending: boolean;
   stateCount: number;
 }
-
-/** Bots are tuned to be beatable by a human on touch controls: modest skill + rubber band. */
-export const botSkill = (slot: number): number => 0.72 + (slot % 3) * 0.05;
-export const botPace = (finished: boolean, gapToBestHuman: number): number =>
-  finished ? 0.75 : gapToBestHuman > 150 ? 0.82 : gapToBestHuman > 50 ? 0.9 : gapToBestHuman < -200 ? 1.03 : 1;
 
 export type RoomPhase = 'loading' | 'countdown' | 'racing' | 'settling' | 'done';
 

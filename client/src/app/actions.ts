@@ -84,6 +84,14 @@ export const actions = {
       notify('Choisis un pseudo (2 caractères minimum).', 'error');
       return false;
     }
+    const goOffline = () => {
+      // No backend reachable: the player can still race (offline practice, no rewards).
+      settingsStore.set({ playerName: clean });
+      appStore.set({ apiStatus: 'offline' });
+      notify('Serveur indisponible : mode hors ligne (sans récompenses).', 'info');
+      return true;
+    };
+    if (appStore.get().apiStatus === 'offline') return goOffline();
     appStore.set({ busy: true });
     try {
       const profile = await api.guest(clean);
@@ -94,13 +102,7 @@ export const actions = {
       AudioEngine.confirm();
       return true;
     } catch (e) {
-      if (e instanceof ApiError && e.status === 0) {
-        // No backend: still let the player race (offline practice).
-        settingsStore.set({ playerName: clean });
-        appStore.set({ apiStatus: 'offline' });
-        notify('Serveur indisponible : mode hors ligne (sans récompenses).', 'info');
-        return true;
-      }
+      if (e instanceof ApiError && (e.status === 0 || e.status === 404 || e.status >= 500)) return goOffline();
       notify(errorText(e), 'error');
       return false;
     } finally {

@@ -50,9 +50,9 @@ describe('arcade simulation', () => {
   }
 
   for (const trackId of TRACK_IDS) {
-    it(`easy bots (skill 0.72, pace 0.82) still finish ${trackId} cleanly but slower`, () => {
+    it(`leading bots (skill 0.66, pace 0.85) still finish ${trackId} cleanly but slower`, () => {
       const fast = runRace(trackId, 'buggy', 1);
-      const easy = runRace(trackId, 'buggy', 1, 0.72, 0.82);
+      const easy = runRace(trackId, 'buggy', 1, 0.66, 0.85);
       console.log(trackId, 'bot lap', easy.t.toFixed(1), 'vs autopilot', fast.t.toFixed(1));
       expect(easy.tracker.finished).toBe(true);
       expect(easy.respawns).toBe(0);

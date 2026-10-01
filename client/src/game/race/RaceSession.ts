@@ -14,6 +14,8 @@ import { SceneInstrumentation } from '@babylonjs/core/Instrumentation/sceneInstr
 import {
   ArcadeVehicle,
   AutoPilot,
+  botPace,
+  botSkill,
   clamp,
   FLAG_AIR,
   FLAG_BOOST,
@@ -224,7 +226,7 @@ export class RaceSession {
         vehicle.ownerId = entry.id;
         const pilot =
           !isLocal || this.config.autopilot
-            ? new AutoPilot(vehicle, { skill: isLocal ? 1 : 0.72 + (entry.slot % 3) * 0.05, lane: slot.lateral * 0.5, seed: entry.slot * 97 + 3, useBoost: true })
+            ? new AutoPilot(vehicle, { skill: isLocal ? 1 : botSkill(entry.slot), lane: slot.lateral * 0.5, seed: entry.slot * 97 + 3, useBoost: true })
             : null;
         const racer: SimRacer = {
           info: entry,
@@ -463,7 +465,7 @@ export class RaceSession {
         if (r !== this.local) {
           // Same rubber band as the server bots (beatable on touch controls).
           const gap = r.tracker.progress - this.local.tracker.progress;
-          r.pilot.pace = r.finishedAt !== null ? 0.75 : gap > 150 ? 0.82 : gap > 50 ? 0.9 : gap < -200 ? 1.03 : 1;
+          r.pilot.pace = botPace(r.finishedAt !== null, gap);
         } else if (r.finishedAt !== null) r.pilot.pace = 0.75;
         input = r.pilot.update(STEP);
       } else {

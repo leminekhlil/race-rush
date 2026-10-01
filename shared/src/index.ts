@@ -9,3 +9,4 @@ export * from './race/AutoPilot';
 export * from './race/grid';
 export * from './protocol';
 export * from './anticheat';
+export * from './race/bots';
