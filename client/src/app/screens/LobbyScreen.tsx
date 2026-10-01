@@ -57,7 +57,7 @@ export const LobbyScreen = () => {
         }
       />
       <div className="scroll-y flex-1 px-4 pt-3 pb-4" style={{ paddingLeft: 'calc(16px + var(--safe-l))', paddingRight: 'calc(16px + var(--safe-r))' }}>
-        <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-[1.1fr_1fr]">
+        <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-[1.1fr_1fr] landscape:grid-cols-[1.1fr_1fr]">
           <Panel className="p-4">
             <div className="flex items-center justify-between">
               <SectionTitle>Pilotes {lobby.players.length}/{MAX_PLAYERS}</SectionTitle>

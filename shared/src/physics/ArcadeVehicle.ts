@@ -158,6 +158,18 @@ export class ArcadeVehicle {
     this.events.push({ type: 'respawn' });
   }
 
+  /** Held on the starting grid: no motion, the throttle only revs the engine. */
+  hold(dt: number, throttle: number, time: number): void {
+    const st = this.state;
+    st.throttle = throttle;
+    st.vx = st.vz = st.vy = 0;
+    st.speed = 0;
+    const target = throttle > 0 ? 0.72 + Math.sin(time * 9) * 0.1 : 0.18;
+    st.rpm += (target - st.rpm) * damp(8, dt);
+    // Engine torque rocks the body slightly when revving.
+    st.roll += ((throttle > 0 ? Math.sin(time * 23) * 0.012 : 0) - st.roll) * damp(10, dt);
+  }
+
   /** Advances the simulation by dt seconds. Events are appended to `events` (caller drains them). */
   step(dt: number, input: VehicleInput, obstacles: readonly Obstacle[] = []): void {
     const t = this.tuning;

@@ -47,6 +47,7 @@ import { InputManager } from '../input/InputManager';
 import { Effects, type VehicleEmitters } from '../effects/Effects';
 import { AudioEngine, haptic, VehicleAudio } from '../audio/AudioEngine';
 import { VehicleView } from './VehicleView';
+import { createPhysicsProps, type PropsHandle } from '../physics/PhysicsProps';
 import { hudStore, initialHud, type RacePhase, type StandingRow } from './hud';
 
 const STEP = 1 / 60;
@@ -142,6 +143,7 @@ export class RaceSession {
   isLoaded = false;
   private readonly onFrame = () => this.frame();
   private instrumentation: SceneInstrumentation | null = null;
+  private props: PropsHandle | null = null;
 
   constructor(
     private readonly host: EngineHost,
@@ -265,6 +267,21 @@ export class RaceSession {
     this.applyAllPoses(0);
     this.camera.update(0, this.local.vehicle.state, this.local.vehicle.tuning);
 
+    if (q.name !== 'eco') {
+      this.setLoading(0.7, 'Physique Havok…');
+      const half: Record<string, [number, number, number]> = { sport: [0.95, 0.6, 2.2], moto: [0.4, 0.75, 1.05], buggy: [1.0, 0.8, 1.8], monster: [1.7, 1.3, 2.3] };
+      const bodies = [...[this.local, ...this.bots].map((r) => ({ model: r.model, id: r.info.vehicle, isLocal: r === this.local })), ...[...this.remotes.values()].map((r) => ({ model: r.model, id: r.info.vehicle, isLocal: false }))];
+      this.props = await createPhysicsProps(
+        scene,
+        this.path,
+        bodies.map((b) => ({ node: b.model.root, halfExtents: new Vector3(...half[b.id]), isLocal: b.isLocal })),
+        (impulse) => {
+          this.camera.addTrauma(clamp(impulse / 60, 0.08, 0.3));
+          AudioEngine.impact(Math.min(8, impulse / 4));
+          haptic(15);
+        },
+      );
+    }
     if (new URLSearchParams(location.search).has('dev')) this.instrumentation = new SceneInstrumentation(this.scene);
     this.setLoading(0.85, 'Compilation des shaders…');
     await scene.whenReadyAsync();
@@ -335,7 +352,7 @@ export class RaceSession {
 
   private frame(): void {
     if (this.disposed) return;
-    const dt = Math.min(this.host.engine.getDeltaTime() / 1000, 0.1);
+    const dt = Math.min(this.host.engine.getDeltaTime() / 1000, 0.17);
     this.envTime += dt;
     this.track.update(dt, this.envTime);
 
@@ -368,16 +385,18 @@ export class RaceSession {
     const racing = this.phase === 'racing' || this.phase === 'finished' || this.phase === 'results';
     this.acc += dt;
     let steps = 0;
-    while (this.acc >= STEP && steps < 5) {
+    // Up to 10 catch-up steps: slow devices (>= 6 FPS) still simulate in real time (the sim is cheap).
+    while (this.acc >= STEP && steps < 10) {
       this.acc -= STEP;
       steps++;
       this.fixedStep(racing);
     }
-    if (steps === 5) this.acc = 0;
+    if (steps === 10) this.acc = 0;
     const alpha = this.acc / STEP;
 
     this.updateRemotes(dt);
     this.applyAllPoses(dt, alpha);
+    this.props?.update();
     const st = this.local.vehicle.state;
     this.camera.update(dt, st, this.local.vehicle.tuning);
     VehicleAudio.setListener(this.camera.camera.position.x, this.camera.camera.position.y, this.camera.camera.position.z, Math.sin(st.heading), Math.cos(st.heading));
@@ -410,8 +429,6 @@ export class RaceSession {
   }
 
   private lastInput: VehicleInput = { throttle: 0, brake: 0, steer: 0, boost: false, drift: false };
-  /** Before GO the vehicles are held in place (no throttle, no reverse). */
-  private readonly frozenInput: VehicleInput = { throttle: 0, brake: 0, steer: 0, boost: false, drift: false };
 
   private fixedStep(racing: boolean): void {
     if (racing) this.raceTime += STEP;
@@ -435,8 +452,13 @@ export class RaceSession {
       r.prev.z = s.z;
       r.prev.h = s.heading;
       let input: VehicleInput;
-      if (!racing) input = this.frozenInput;
-      else if (r === this.local && !r.pilot && r.finishedAt === null) input = this.input.sample();
+      if (!racing) {
+        // Held on the grid until GO: throttle revs the engine only.
+        const rev = r === this.local ? this.input.sample().throttle > 0 || !!this.config.autopilot : Math.sin(this.envTime * 1.7 + r.info.slot) > 0.2;
+        r.vehicle.hold(STEP, this.phase === 'countdown' && rev ? 1 : 0, this.envTime);
+        continue;
+      }
+      if (r === this.local && !r.pilot && r.finishedAt === null) input = this.input.sample();
       else if (r.pilot) {
         if (r !== this.local) {
           // Same rubber band as the server bots (beatable on touch controls).
@@ -770,6 +792,7 @@ export class RaceSession {
       grounded: st.grounded,
       lateral: st.lateral,
       drawCalls: this.instrumentation?.drawCallsCounter.current ?? -1,
+      physicsProps: this.props !== null,
       activeMeshes: this.scene.getActiveMeshes().length,
       fps: this.host.fps,
     };
@@ -792,6 +815,7 @@ export class RaceSession {
       rr.audio?.dispose();
       rr.emitters.dispose();
     }
+    this.props?.dispose();
     this.effects?.dispose();
     this.track?.dispose();
     this.scene.dispose();

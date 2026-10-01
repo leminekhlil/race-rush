@@ -77,7 +77,7 @@ export const PlayScreen = () => {
         }
       />
       <div className="scroll-y flex-1 px-4 pt-3 pb-4" style={{ paddingLeft: 'calc(16px + var(--safe-l))', paddingRight: 'calc(16px + var(--safe-r))' }}>
-        <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-3">
+        <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-3 landscape:grid-cols-3">
           <Panel className="flex flex-col gap-3 p-4">
             <div>
               <SectionTitle>Course rapide</SectionTitle>

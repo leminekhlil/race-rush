@@ -1,0 +1,31 @@
+// Verifies Havok loads (STANDARD quality), props exist, and the player's car physically knocks a cone away.
+import { chromium } from '@playwright/test';
+const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: 320, height: 180 } });
+const errors = [];
+page.on('pageerror', (e) => errors.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error' || m.text().includes('[physics]')) errors.push(m.text()); });
+await page.goto(`${BASE}/?dev=1&track=city&vehicle=sport&autopilot=1&quality=standard&bots=0`);
+await page.waitForFunction(() => window.__raceRush?.session?.debugState?.().phase === 'racing', null, { timeout: 90000 });
+const st = await page.evaluate(() => window.__raceRush.session.debugState());
+const count = await page.evaluate(() => window.__raceRush.session.scene.meshes.filter((m) => m.name.startsWith('prop-')).length);
+await page.evaluate(() => {
+  const s = window.__raceRush.session;
+  const p = s.scene.meshes.find((m) => m.name === 'prop-2');
+  window.__c0 = p.position.clone();
+  s.setAutopilot(false);
+  const v = s.local.vehicle;
+  const proj = s.path.project(p.position.x, p.position.z);
+  v.placeAt(proj.s - 8, proj.lateral);
+  const h = Math.atan2(p.position.x - v.state.x, p.position.z - v.state.z);
+  v.state.heading = h;
+  v.state.vx = Math.sin(h) * 12;
+  v.state.vz = Math.cos(h) * 12;
+});
+await page.waitForTimeout(2000);
+const moved = await page.evaluate(() => window.__raceRush.session.scene.meshes.find((m) => m.name === 'prop-2').position.subtract(window.__c0).length());
+console.log(JSON.stringify({ physicsProps: st.physicsProps, props: count, coneDisplacement: +moved.toFixed(2) }));
+console.log('ERRORS', errors.join('\n') || 'none');
+await browser.close();
+process.exit(st.physicsProps && count > 0 && moved > 1 && moved < 60 && !errors.length ? 0 : 1);

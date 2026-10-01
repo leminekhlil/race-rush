@@ -26,7 +26,7 @@ const useCountUp = (target: number, delay = 300, duration = 900) => {
 const PODIUM_STYLE = ['from-gold-300 to-gold-600 text-night-950', 'from-slate-200 to-slate-400 text-night-950', 'from-amber-600 to-amber-800 text-white'];
 
 const Row = ({ r, local }: { r: ResultDTO; local: boolean }) => (
-  <li className={`flex items-center gap-3 rounded-2xl px-3 py-2 ${local ? 'bg-volt-500/25 ring-1 ring-volt-400/60' : 'bg-night-950/45'}`}>
+  <li className={`flex items-center gap-3 rounded-2xl px-3 py-1 tall:py-2 ${local ? 'bg-volt-500/25 ring-1 ring-volt-400/60' : 'bg-night-950/45'}`}>
     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b font-display ${PODIUM_STYLE[r.position - 1] ?? 'from-night-700 to-night-800 text-white'}`}>{r.position}</span>
     <VehicleIcon id={r.vehicle} color={paintById(r.color).hex} className="h-6 w-11 shrink-0" />
     <span className="min-w-0 flex-1 truncate font-display">
@@ -63,7 +63,7 @@ export const ResultsScreen = () => {
   return (
     <div className="absolute inset-0 flex flex-col bg-night-950/70 backdrop-blur-[3px]" data-testid="results-screen">
       <div className="scroll-y flex-1 px-4 py-4" style={{ paddingLeft: 'calc(16px + var(--safe-l))', paddingRight: 'calc(16px + var(--safe-r))', paddingTop: 'calc(12px + var(--safe-t))' }}>
-        <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-[1.25fr_1fr]">
+        <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-[1.25fr_1fr] landscape:grid-cols-[1.25fr_1fr]">
           <Panel className="p-4">
             <div className="flex items-baseline justify-between">
               <h1 className="font-display text-outline text-3xl italic">CLASSEMENT</h1>
@@ -79,7 +79,7 @@ export const ResultsScreen = () => {
           <Panel className="flex flex-col p-4">
             <div className="text-center">
               <div className="text-xs font-bold tracking-[0.3em] text-volt-400">TA COURSE</div>
-              <div className="animate-pop font-display text-outline text-6xl text-gold-400" data-testid="my-position">
+              <div className="animate-pop font-display text-outline text-5xl text-gold-400 tall:text-6xl" data-testid="my-position">
                 {me ? (me.flagged ? 'DSQ' : me.position === 1 ? '1er' : `${me.position}e`) : '—'}
               </div>
               {me?.finished && <div className="font-display text-lg tabular-nums">{formatRaceTime(me.time)}</div>}
