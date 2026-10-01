@@ -18,6 +18,8 @@ export class EngineHost {
   private resolution: AdaptiveResolution;
   quality: QualityParams;
   stats: FrameStats = { fps: 0, drawCalls: 0, activeMeshes: 0 };
+  /** Menus (showroom) are cheap to render: use a crisper resolution than the race profile. */
+  private menuMode = false;
   private readonly onResize = () => this.engine.resize();
 
   constructor(readonly canvas: HTMLCanvasElement) {
@@ -62,9 +64,15 @@ export class EngineHost {
     return r;
   }
 
+  setMenuMode(on: boolean): void {
+    if (this.menuMode === on) return;
+    this.menuMode = on;
+    this.applyScaling();
+  }
+
   private applyScaling(): void {
-    const dpr = Math.min(window.devicePixelRatio || 1, this.quality.maxDpr);
-    const scale = dpr * this.quality.renderScale * this.resolution.scale;
+    const dpr = Math.min(window.devicePixelRatio || 1, this.menuMode ? 2 : this.quality.maxDpr);
+    const scale = this.menuMode ? dpr : dpr * this.quality.renderScale * this.resolution.scale;
     this.engine.setHardwareScalingLevel(1 / Math.max(0.25, scale));
   }
 

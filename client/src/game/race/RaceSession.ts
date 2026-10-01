@@ -139,6 +139,7 @@ export class RaceSession {
   private obstacles: Obstacle[] = [];
   private serverStandings: StandingDTO[] | null = null;
   private disposed = false;
+  isLoaded = false;
   private readonly onFrame = () => this.frame();
   private instrumentation: SceneInstrumentation | null = null;
 
@@ -221,7 +222,7 @@ export class RaceSession {
         vehicle.ownerId = entry.id;
         const pilot =
           !isLocal || this.config.autopilot
-            ? new AutoPilot(vehicle, { skill: isLocal ? 1 : 0.86 + ((entry.slot * 37) % 10) / 100, lane: slot.lateral * 0.5, seed: entry.slot * 97 + 3, useBoost: true })
+            ? new AutoPilot(vehicle, { skill: isLocal ? 1 : 0.72 + (entry.slot % 3) * 0.05, lane: slot.lateral * 0.5, seed: entry.slot * 97 + 3, useBoost: true })
             : null;
         const racer: SimRacer = {
           info: entry,
@@ -276,6 +277,7 @@ export class RaceSession {
     scene.onBeforeRenderObservable.add(this.onFrame);
     this.host.mount(scene);
     this.setPhase('intro');
+    this.isLoaded = true;
     this.net?.sendLoaded();
     if (this.config.mode === 'offline') this.startCountdownAt(performance.now() + 1200 + 3000);
   }
@@ -436,7 +438,11 @@ export class RaceSession {
       if (!racing) input = this.frozenInput;
       else if (r === this.local && !r.pilot && r.finishedAt === null) input = this.input.sample();
       else if (r.pilot) {
-        if (r.finishedAt !== null) r.pilot.pace = 0.75;
+        if (r !== this.local) {
+          // Same rubber band as the server bots (beatable on touch controls).
+          const gap = r.tracker.progress - this.local.tracker.progress;
+          r.pilot.pace = r.finishedAt !== null ? 0.75 : gap > 150 ? 0.82 : gap > 50 ? 0.9 : gap < -200 ? 1.03 : 1;
+        } else if (r.finishedAt !== null) r.pilot.pace = 0.75;
         input = r.pilot.update(STEP);
       } else {
         // Local player after finish: hand over to a cool-down autopilot.

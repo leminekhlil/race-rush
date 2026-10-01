@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Landscape phones are short: size the HUD by height, not width. */
+@custom-variant tall (@media (min-height: 520px));
+
 @theme {
   --font-display: 'Russo One', 'Impact', system-ui, sans-serif;
   --font-sans: 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif;

@@ -86,10 +86,10 @@ const MiniMap = ({ session }: { session: RaceSession }) => {
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
   }, [session]);
-  return <canvas ref={ref} width={132} height={132} className="glass-soft h-[96px] w-[96px] rounded-2xl sm:h-[132px] sm:w-[132px]" aria-label="Mini-carte" />;
+  return <canvas ref={ref} width={132} height={132} className="glass-soft h-[92px] w-[92px] rounded-2xl tall:h-[132px] tall:w-[132px]" aria-label="Mini-carte" />;
 };
 
-export const RaceHud = ({ session }: { session: RaceSession }) => {
+export const RaceHud = ({ session, compact }: { session: RaceSession; compact: boolean }) => {
   const hud = useStore(hudStore, (s) => s);
   const showFps = useStore(settingsStore, (s) => s.showFps);
   const speedlinesOpacity = Math.max(0, Math.min(1, (hud.speedRatio - 0.62) * 2.2)) * (hud.boosting ? 0.6 : 0.3);
@@ -109,30 +109,30 @@ export const RaceHud = ({ session }: { session: RaceSession }) => {
       </div>
 
       {/* Top-left: position + lap + time */}
-      <div className="absolute flex items-start gap-2 sm:gap-3" style={{ left: 'calc(12px + var(--safe-l))', top: 'calc(10px + var(--safe-t))' }}>
-        <div className="glass skew-panel flex items-baseline gap-1 rounded-l-2xl py-1 pr-6 pl-3 sm:py-2 sm:pl-4" data-testid="hud-position">
-          <span className="font-display text-outline text-4xl leading-none text-gold-400 sm:text-6xl">{hud.position}</span>
-          <span className="font-display text-lg text-white/80 sm:text-2xl">/ {hud.total}</span>
+      <div className="absolute flex items-start gap-2 tall:gap-3" style={{ left: 'calc(12px + var(--safe-l))', top: 'calc(10px + var(--safe-t))' }}>
+        <div className="glass skew-panel flex items-baseline gap-1 rounded-l-2xl py-1 pr-6 pl-3 tall:py-2 tall:pl-4" data-testid="hud-position">
+          <span className="font-display text-outline text-4xl leading-none text-gold-400 tall:text-6xl">{hud.position}</span>
+          <span className="font-display text-lg text-white/80 tall:text-2xl">/ {hud.total}</span>
         </div>
-        <div className="glass rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2">
-          <div className="text-[11px] font-bold tracking-[0.2em] text-volt-400 sm:text-xs">TOUR</div>
-          <div className="font-display text-xl leading-tight sm:text-3xl" data-testid="hud-lap">
+        <div className="glass rounded-2xl px-3 py-1.5 tall:px-4 tall:py-2">
+          <div className="text-[11px] font-bold tracking-[0.2em] text-volt-400 tall:text-xs">TOUR</div>
+          <div className="font-display text-xl leading-tight tall:text-3xl" data-testid="hud-lap">
             {Math.min(hud.lap, hud.laps)} <span className="text-white/50">/ {hud.laps}</span>
           </div>
         </div>
-        <div className="glass rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2">
-          <div className="text-[11px] font-bold tracking-[0.2em] text-volt-400 sm:text-xs">TEMPS</div>
-          <div className="font-display text-xl leading-tight tabular-nums sm:text-3xl" data-testid="hud-time">
+        <div className="glass rounded-2xl px-3 py-1.5 tall:px-4 tall:py-2">
+          <div className="text-[11px] font-bold tracking-[0.2em] text-volt-400 tall:text-xs">TEMPS</div>
+          <div className="font-display text-xl leading-tight tabular-nums tall:text-3xl" data-testid="hud-time">
             {formatRaceTime(hud.raceTime)}
           </div>
-          {hud.bestLap != null && <div className="text-[11px] font-semibold text-gold-300 sm:text-xs">Meilleur {formatRaceTime(hud.bestLap)}</div>}
+          {hud.bestLap != null && <div className="text-[11px] font-semibold text-gold-300 tall:text-xs">Meilleur {formatRaceTime(hud.bestLap)}</div>}
         </div>
       </div>
 
       {/* Top-right: minimap + standings */}
       <div className="absolute flex flex-col items-end gap-2" style={{ right: 'calc(12px + var(--safe-r))', top: 'calc(10px + var(--safe-t))' }}>
         <MiniMap session={session} />
-        <ol className="glass-soft hidden min-w-[150px] rounded-xl px-2 py-1 text-sm sm:block" aria-label="Classement">
+        <ol className={`glass-soft min-w-[150px] rounded-xl px-2 py-1 text-sm ${compact ? 'hidden' : ''}`} aria-label="Classement">
           {hud.standings.slice(0, 5).map((r) => (
             <li key={r.id} className={`flex items-center gap-2 py-0.5 ${r.isLocal ? 'font-bold text-gold-300' : 'text-white/85'}`}>
               <span className="w-4 text-right tabular-nums">{r.position}</span>
@@ -153,12 +153,12 @@ export const RaceHud = ({ session }: { session: RaceSession }) => {
       {/* Bottom-center: speed + boost gauge */}
       <div className="absolute left-1/2 flex -translate-x-1/2 flex-col items-center" style={{ bottom: 'calc(10px + var(--safe-b))' }}>
         <div className="flex items-baseline gap-1">
-          <span className="font-display text-outline text-4xl tabular-nums sm:text-6xl" data-testid="hud-speed">
+          <span className="font-display text-outline text-4xl tabular-nums tall:text-6xl" data-testid="hud-speed">
             {hud.speedKmh}
           </span>
           <span className="font-bold text-white/70">km/h</span>
         </div>
-        <div className="glass-soft mt-1 h-3 w-40 overflow-hidden rounded-full sm:h-4 sm:w-64" aria-label="Jauge de boost">
+        <div className="glass-soft mt-1 h-3 w-40 overflow-hidden rounded-full tall:h-4 tall:w-64" aria-label="Jauge de boost">
           <div className={`boost-bar h-full rounded-full transition-[width] duration-100 ${hud.boosting ? 'shine' : ''}`} style={{ width: `${Math.round(hud.boost * 100)}%` }} />
         </div>
         <div className={`mt-0.5 text-[11px] font-bold tracking-[0.3em] ${hud.boost > 0.2 ? 'text-cyanx-400' : 'text-white/40'}`}>
@@ -177,14 +177,14 @@ export const RaceHud = ({ session }: { session: RaceSession }) => {
 
       {hud.phase === 'intro' && (
         <div className="absolute inset-x-0 top-[22%] text-center">
-          <div className="font-display text-outline text-3xl text-white/95 sm:text-5xl">PRÊTS ?</div>
+          <div className="font-display text-outline text-3xl text-white/95 tall:text-5xl">PRÊTS ?</div>
         </div>
       )}
 
       {hud.toast && (
         <div key={hud.toast.id} className="absolute inset-x-0 top-[20%] flex justify-center">
           <div
-            className={`animate-toast font-display text-outline rounded-2xl px-5 py-1 text-2xl sm:text-4xl ${
+            className={`animate-toast font-display text-outline rounded-2xl px-5 py-1 text-2xl tall:text-4xl ${
               hud.toast.tone === 'good' ? 'text-gold-400' : hud.toast.tone === 'warn' ? 'text-rush-500' : 'text-white'
             }`}
           >
@@ -195,14 +195,14 @@ export const RaceHud = ({ session }: { session: RaceSession }) => {
 
       {hud.wrongWay && (
         <div className="absolute inset-x-0 top-[34%] flex justify-center">
-          <div className="font-display text-outline animate-pulse rounded-2xl bg-rush-500/80 px-6 py-2 text-2xl sm:text-4xl">MAUVAIS SENS ↺</div>
+          <div className="font-display text-outline animate-pulse rounded-2xl bg-rush-500/80 px-6 py-2 text-2xl tall:text-4xl">MAUVAIS SENS ↺</div>
         </div>
       )}
 
       {hud.phase === 'finished' && (
         <div className="absolute inset-x-0 top-[24%] text-center">
-          <div className="animate-pop font-display text-outline text-5xl text-gold-400 sm:text-7xl">ARRIVÉE !</div>
-          <div className="font-display text-outline mt-2 text-2xl sm:text-4xl">{ordinal(hud.position)} place</div>
+          <div className="animate-pop font-display text-outline text-5xl text-gold-400 tall:text-7xl">ARRIVÉE !</div>
+          <div className="font-display text-outline mt-2 text-2xl tall:text-4xl">{ordinal(hud.position)} place</div>
         </div>
       )}
     </div>

@@ -160,7 +160,7 @@ export class Lobby {
           color: PAINTS[(seed + bi * 3) % PAINTS.length].id,
           isBot: true,
           slot,
-          upgrades: { engine: Math.min(5, bi), handling: Math.min(5, bi), boost: 0 },
+          upgrades: { engine: 0, handling: 0, boost: 0 },
         });
         bi++;
       }

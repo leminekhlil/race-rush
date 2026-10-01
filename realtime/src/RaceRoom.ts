@@ -49,6 +49,11 @@ interface Racer {
   stateCount: number;
 }
 
+/** Bots are tuned to be beatable by a human on touch controls: modest skill + rubber band. */
+export const botSkill = (slot: number): number => 0.72 + (slot % 3) * 0.05;
+export const botPace = (finished: boolean, gapToBestHuman: number): number =>
+  finished ? 0.75 : gapToBestHuman > 150 ? 0.82 : gapToBestHuman > 50 ? 0.9 : gapToBestHuman < -200 ? 1.03 : 1;
+
 export type RoomPhase = 'loading' | 'countdown' | 'racing' | 'settling' | 'done';
 
 export interface RaceRoomOptions {
@@ -87,7 +92,7 @@ export class RaceRoom {
       if (entry.isBot) {
         const vehicle = new ArcadeVehicle(this.path, tunedVehicle(entry.vehicle, entry.upgrades), slot.s, slot.lateral);
         vehicle.ownerId = entry.id;
-        bot = { vehicle, pilot: new AutoPilot(vehicle, { skill: 0.84 + (entry.slot % 3) * 0.04, lane: slot.lateral * 0.5, seed: entry.slot * 131 + 7, useBoost: true }) };
+        bot = { vehicle, pilot: new AutoPilot(vehicle, { skill: botSkill(entry.slot), lane: slot.lateral * 0.5, seed: entry.slot * 131 + 7, useBoost: true }) };
       }
       this.racers.push({
         entry,
@@ -264,7 +269,7 @@ export class RaceRoom {
     for (const r of this.racers) {
       if (!r.bot) continue;
       const gap = r.tracker.progress - bestHuman;
-      r.bot.pilot.pace = r.finishedAt !== null ? 0.75 : gap > 120 ? 0.93 : gap < -150 ? 1.06 : 1;
+      r.bot.pilot.pace = botPace(r.finishedAt !== null, gap);
       for (let i = 0; i < config.simSubsteps; i++) {
         r.bot.vehicle.step(dt, r.bot.pilot.update(dt), this.obstacles);
         r.bot.vehicle.events.length = 0;

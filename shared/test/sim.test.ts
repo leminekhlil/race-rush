@@ -3,10 +3,11 @@ import { ArcadeVehicle, AutoPilot, LapTracker, getTrackPath, tunedVehicle, VEHIC
 
 const DT = 1 / 60;
 
-const runRace = (trackId: string, vehicleId: (typeof VEHICLE_IDS)[number], laps = 3) => {
+const runRace = (trackId: string, vehicleId: (typeof VEHICLE_IDS)[number], laps = 3, skill = 1, pace = 1) => {
   const path = getTrackPath(trackId);
   const car = new ArcadeVehicle(path, tunedVehicle(vehicleId), path.def.gridOffset, 0);
-  const pilot = new AutoPilot(car, { skill: 1, lane: 0, seed: 7, useBoost: true });
+  const pilot = new AutoPilot(car, { skill, lane: 0, seed: 7, useBoost: true });
+  pilot.pace = pace;
   const tracker = new LapTracker(path, laps, car.state.s);
   let t = 0;
   let wallHits = 0;
@@ -46,5 +47,16 @@ describe('arcade simulation', () => {
         }
       });
     }
+  }
+
+  for (const trackId of TRACK_IDS) {
+    it(`easy bots (skill 0.72, pace 0.82) still finish ${trackId} cleanly but slower`, () => {
+      const fast = runRace(trackId, 'buggy', 1);
+      const easy = runRace(trackId, 'buggy', 1, 0.72, 0.82);
+      console.log(trackId, 'bot lap', easy.t.toFixed(1), 'vs autopilot', fast.t.toFixed(1));
+      expect(easy.tracker.finished).toBe(true);
+      expect(easy.respawns).toBe(0);
+      expect(easy.t).toBeGreaterThan(fast.t * 1.05);
+    });
   }
 });

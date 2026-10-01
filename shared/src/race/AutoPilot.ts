@@ -64,7 +64,7 @@ export class AutoPilot {
     const k = Math.max(path.maxCurvatureAhead(st.s + 4, brakingWindow), 1e-4);
     const falloff = 1 - t.highSpeedSteerFalloff * Math.pow(clamp(speed / t.maxSpeed, 0, 1), 2);
     const vCorner = (t.turnRate * falloff * 0.92) / k;
-    const targetSpeed = Math.min(t.maxSpeed * 1.1, vCorner * (0.8 + 0.2 * this.opts.skill)) * this.pace;
+    const targetSpeed = Math.min(t.maxSpeed * (this.pace < 1 ? 1 : 1.1), vCorner * (0.8 + 0.2 * this.opts.skill)) * this.pace;
 
     this.input.throttle = speed < targetSpeed ? 1 : speed < targetSpeed + 2 ? 0.3 : 0;
     this.input.brake = speed > targetSpeed + 4 ? clamp((speed - targetSpeed) / 10, 0.3, 1) : 0;
@@ -74,9 +74,9 @@ export class AutoPilot {
       this.input.brake = 0;
     }
     const straight = path.maxCurvatureAhead(st.s, 120) < 0.006;
-    this.input.boost = this.opts.useBoost && straight && st.boost > 1 && speed > 25 && Math.abs(err) < 0.15;
+    this.input.boost = this.opts.useBoost && this.pace >= 1 && straight && st.boost > 1 && speed > 25 && Math.abs(err) < 0.15;
     if (st.boosting && !straight) this.input.boost = false;
-    if (st.boosting && straight && st.boost > 0) this.input.boost = true;
+    if (st.boosting && straight && st.boost > 0 && this.pace >= 1) this.input.boost = true;
     this.input.drift = false;
     return this.input;
   }

@@ -64,7 +64,9 @@ export const RaceScreen = ({ config, net }: { config: RaceConfig; net: RaceNetAd
     let cancelled = false;
     s.load()
       .then(() => {
-        if (!cancelled) setSession(s);
+        if (cancelled) return;
+        netBridge.sessionReady(s);
+        setSession(s);
       })
       .catch((err) => {
         console.error('Race load failed', err);
@@ -97,7 +99,7 @@ export const RaceScreen = ({ config, net }: { config: RaceConfig; net: RaceNetAd
       {!session && <LoadingOverlay />}
       {session && (
         <>
-          <RaceHud session={session} />
+          <RaceHud session={session} compact={showTouch} />
           {showTouch && phase !== 'results' && <TouchControls input={session.input} onRespawn={() => session.requestRespawn()} />}
           {!autoAccel && showTouch && (
             <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-white/50">Accélération auto désactivée</div>
@@ -106,8 +108,9 @@ export const RaceScreen = ({ config, net }: { config: RaceConfig; net: RaceNetAd
             type="button"
             aria-label="Pause"
             onClick={() => (config.mode === 'offline' ? session.togglePause() : quit())}
+            data-testid="pause-button"
             className="glass-soft absolute flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-white/90 active:scale-90"
-            style={{ left: '50%', top: 'calc(10px + var(--safe-t))', transform: 'translateX(-50%)' }}
+            style={{ right: showTouch ? 'calc(116px + var(--safe-r))' : 'calc(156px + var(--safe-r))', top: 'calc(10px + var(--safe-t))' }}
           >
             {config.mode === 'offline' ? 'II' : '✕'}
           </button>
