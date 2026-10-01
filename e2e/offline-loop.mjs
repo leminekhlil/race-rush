@@ -14,6 +14,7 @@ await page.waitForFunction(() => !document.querySelector('[data-testid="play-but
 console.log('✓ offline onboarding');
 await page.getByTestId('play-button').tap();
 await page.getByTestId('quick-race').tap();
+await page.getByTestId('select-confirm').tap(); // vehicle selection step
 await page.getByTestId('race-hud').waitFor({ timeout: 60000 });
 console.log('✓ offline race started');
 await page.getByTestId('results-screen').waitFor({ timeout: 400000 });

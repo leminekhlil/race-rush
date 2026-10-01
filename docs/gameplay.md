@@ -26,7 +26,7 @@ Principle: **less unnecessary complexity, more sensation**. The driving model is
 | Suspension | stiff | stiff + lean into turns | long travel | very long, visible |
 | Engine sound | high | buzzy | mid | deep |
 
-Upgrades (engine / handling / boost, 5 levels each) modify the tuning; prices live only on the server.
+Upgrades (Moteur / Turbo / Freinage / Maniabilité, 5 levels each) modify the tuning (`tunedVehicle`); the garage shows five stats (Vitesse, Accélération, Maniabilité, Stabilité, Turbo) from `displayStats`. Prices live only on the server.
 
 ## Camera (`DynamicRaceCamera`)
 
@@ -38,7 +38,7 @@ FOV, close lampposts/buildings/chevrons, road dashes, particles, engine pitch wi
 
 ## Race loop
 
-Grid (cars held, throttle revs engine) → lights 3-2-1-GO (start gantry + HUD + beeps) → 3 laps with ordered checkpoints → ARRIVÉE → finish camera, cool-down autopilot → results → rewards (online) → rematch / garage.
+Vehicle selection (class cards + colour) → grid **behind** the start line (cars held, throttle revs engine) → lights 3-2-1-GO (3D gantry lights + HUD start lights, yellow digits, green GO!, beeps) → 3 laps with ordered checkpoints (last lap: checkered flag) → ARRIVÉE → finish camera, cool-down autopilot → **3D podium** (top 3, confetti) + final ranking with gaps → rewards (online, server-computed) → MENU / REJOUER / CONTINUER (garage).
 
 ## Bots
 
@@ -47,3 +47,17 @@ Grid (cars held, throttle revs engine) → lights 3-2-1-GO (start gantry + HUD +
 ## Tracks
 
 `TrackDefinition` = closed control points (+ elevation, width), ramps, checkpoints, palette, decor seed. City (1651 m, elevation + 2 kickers, 8 checkpoints) is complete; Desert (1379 m, dunes, canyon walls, rocks, cacti, tumbleweeds) is a playable preview. Adding a track = adding a definition.
+
+## Visual references (`docs/references/`)
+
+The five reference boards are functional/visual targets, not pixel-perfect specs. Mapping:
+
+| Reference | Implementation |
+|---|---|
+| 01 Garage | `GarageScreen.tsx` (top nav, MES VÉHICULES, stats, Couleurs, Améliorations; locked Motifs/Stickers/Effets/Roues), `garage/workshop.ts` (3D workshop + hazard turntable) |
+| 03 Sélection du véhicule | `VehicleSelectScreen.tsx` + `garage/Thumbnails.ts` (3D thumbnails rendered off-screen) |
+| 04 HUD en course | `RaceHud.tsx` (position + standings with "Toi", lap, stopwatch, minimap with flag, segmented boost), `TouchControls.tsx` (round arrows, BOOST lightning, brake-disc FREIN/DRIFT) |
+| 05 Départ de course | `TrackBuilder.ts` (teal RACE RUSH gantry, 3-lamp traffic light, checkered line, palms, crown banners) + HUD start lights |
+| 06 Fin de course | `results/PodiumScene.ts` (gold/silver/bronze podium, name plates, confetti), `ResultsScreen.tsx` (CLASSEMENT FINAL with ÉCART, rewards, actions) |
+
+Canvas textures drawn on planes are sampled upside-down in Babylon: artwork is drawn pre-flipped (`flipForPlane`) instead of mirroring meshes.

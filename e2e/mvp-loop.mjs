@@ -45,6 +45,7 @@ await step('play: online quick race on City', async () => {
   await shot('05-play');
   await page.getByTestId('quick-track-city').tap();
   await page.getByTestId('quick-race').tap();
+  await page.getByTestId('select-confirm').tap(); // vehicle selection step
   await page.getByTestId('race-hud').waitFor({ timeout: 60000 });
   raceStart = Date.now();
   await page.waitForFunction(() => window.__raceRush?.session?.debugState?.().phase === 'racing', null, { timeout: 60000 });

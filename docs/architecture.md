@@ -24,7 +24,8 @@ The domain package has **no dependency** on Babylon, React, the DOM or Node: the
 | Effects | `client/src/game/effects/Effects.ts` (pooled particle systems) |
 | Input | `client/src/game/input/InputManager.ts` (keyboard, touch, gamepad) |
 | Lobby / Multiplayer / Networking | `realtime/src/*`, `client/src/net/*`, `shared/src/protocol.ts` |
-| Player / Progression / Garage / Customization | `backend/app/Services/*`, `backend/app/Http/Controllers/*`, `client/src/app/screens/GarageScreen.tsx`, `client/src/game/garage/GarageScene.ts` |
+| Player / Progression / Garage / Customization | `backend/app/Services/*`, `backend/app/Http/Controllers/*`, `client/src/app/screens/GarageScreen.tsx`, `client/src/game/garage/GarageScene.ts` + `workshop.ts` (showroom), `Thumbnails.ts` (off-screen 3D thumbnails) |
+| Results | `client/src/game/results/PodiumScene.ts` (3D podium, confetti), `client/src/app/screens/ResultsScreen.tsx` |
 | Performance | `client/src/game/quality/QualityManager.ts`, `client/src/game/engine/EngineHost.ts` |
 
 ## Runtime flow (online race)
@@ -43,7 +44,7 @@ Realtime ──WS──> Clients  : race.results (+ XP / v-MRU granted by the se
 
 ## Loading
 
-`BOOT → fonts + core bundle → Home (showroom scene) → Garage (same scene) → Race (showroom released, circuit built procedurally, Havok wasm lazy-loaded except on ECO)`. City and Desert are never in memory at the same time.
+`BOOT → fonts + core bundle → Home (showroom scene) → Garage (same scene) → Race (showroom released, circuit built procedurally, Havok wasm lazy-loaded except on ECO) → Results (podium scene, released on exit)`. City and Desert are never in memory at the same time; only one 3D scene is mounted at once (`client/src/app/backdrop.ts`).
 
 ## Client state
 
