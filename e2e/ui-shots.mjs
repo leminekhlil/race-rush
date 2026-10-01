@@ -27,7 +27,8 @@ for (const vp of VIEWPORTS.filter((v) => !only || v.name === only)) {
   await page.getByTestId('garage-screen').waitFor();
   await click('garage-vehicle-monster');
   await shot('garage-stats');
-  await click('garage-tab-paint');
+  // Compact layouts (phones) use tabs; the wide garage shows every panel at once.
+  if (await page.getByTestId('garage-tab-paint').isVisible()) await click('garage-tab-paint');
   await shot('garage-paint');
   await click('select-vehicle');
   await click('garage-race');

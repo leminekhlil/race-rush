@@ -5,7 +5,7 @@ import { createRng } from '@race-rush/shared';
 
 type Painter = (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
 
-const make = (scene: Scene, name: string, w: number, h: number, paint: Painter, opts: { mips?: boolean; alpha?: boolean; wrap?: boolean } = {}) => {
+export const make = (scene: Scene, name: string, w: number, h: number, paint: Painter, opts: { mips?: boolean; alpha?: boolean; wrap?: boolean } = {}) => {
   const tex = new DynamicTexture(name, { width: w, height: h }, scene, opts.mips ?? true, Texture.TRILINEAR_SAMPLINGMODE);
   const ctx = tex.getContext() as unknown as CanvasRenderingContext2D;
   paint(ctx, w, h);
@@ -20,12 +20,12 @@ const make = (scene: Scene, name: string, w: number, h: number, paint: Painter, 
 };
 
 /** Canvas textures are sampled upside-down on Babylon planes: draw plane-facing artwork pre-flipped vertically. */
-const flipForPlane = (ctx: CanvasRenderingContext2D, h: number) => {
+export const flipForPlane = (ctx: CanvasRenderingContext2D, h: number) => {
   ctx.translate(0, h);
   ctx.scale(1, -1);
 };
 
-const noise = (ctx: CanvasRenderingContext2D, w: number, h: number, base: string, amount: number, seed: number, count = 2400) => {
+export const noise = (ctx: CanvasRenderingContext2D, w: number, h: number, base: string, amount: number, seed: number, count = 2400) => {
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, w, h);
   const rng = createRng(seed);

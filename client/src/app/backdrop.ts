@@ -31,3 +31,9 @@ export const hideBackdrop = (): void => {
   releaseGarageScene();
   getEngineHost().setMenuMode(false);
 };
+
+/** Moves the showroom vehicle into the free area between garage panels. */
+export const garageFraming = (x: number, y: number, zoom = 1): void => {
+  if (!active) return;
+  getGarageScene(getEngineHost()).setFraming(x, y, zoom);
+};
