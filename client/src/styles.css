@@ -1,0 +1,220 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Russo One', 'Impact', system-ui, sans-serif;
+  --font-sans: 'Rajdhani', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-night-950: #040a1c;
+  --color-night-900: #081230;
+  --color-night-800: #0d1b45;
+  --color-night-700: #13265e;
+  --color-night-600: #1b3480;
+  --color-volt-400: #4d8dff;
+  --color-volt-500: #1f6bff;
+  --color-volt-600: #1554d6;
+  --color-gold-300: #ffe07a;
+  --color-gold-400: #ffd03d;
+  --color-gold-500: #ffc61a;
+  --color-gold-600: #e0a800;
+  --color-rush-500: #e3262f;
+  --color-cyanx-400: #19e3ff;
+}
+
+:root {
+  color-scheme: dark;
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #040a1c;
+  color: #f2f5ff;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#game-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+  touch-action: none;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+#root > * {
+  pointer-events: auto;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+.text-outline {
+  -webkit-text-stroke: 1.5px rgba(4, 10, 28, 0.85);
+  paint-order: stroke fill;
+}
+
+.glass {
+  background: linear-gradient(160deg, rgba(19, 38, 94, 0.82), rgba(8, 18, 48, 0.88));
+  border: 1px solid rgba(77, 141, 255, 0.28);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.glass-soft {
+  background: rgba(8, 18, 48, 0.55);
+  border: 1px solid rgba(77, 141, 255, 0.2);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.btn-gold {
+  background: linear-gradient(180deg, #ffe07a 0%, #ffc61a 45%, #e0a800 100%);
+  color: #1a1200;
+  box-shadow:
+    0 6px 0 #9b7200,
+    0 12px 28px rgba(255, 198, 26, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.55);
+}
+
+.btn-gold:active {
+  transform: translateY(4px);
+  box-shadow:
+    0 2px 0 #9b7200,
+    0 6px 14px rgba(255, 198, 26, 0.3),
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
+}
+
+.btn-volt {
+  background: linear-gradient(180deg, #4d8dff 0%, #1f6bff 50%, #1554d6 100%);
+  color: #fff;
+  box-shadow:
+    0 5px 0 #0d3a9c,
+    0 10px 24px rgba(31, 107, 255, 0.35),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35);
+}
+
+.btn-volt:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 2px 0 #0d3a9c,
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+
+.skew-panel {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+
+.speedlines {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background: repeating-conic-gradient(from 0deg at 50% 52%, rgba(255, 255, 255, 0.0) 0deg 4deg, rgba(200, 225, 255, 0.55) 4.3deg 4.6deg, rgba(255, 255, 255, 0) 5deg 9deg);
+  mask-image: radial-gradient(circle at 50% 52%, transparent 0 32%, black 62%);
+  -webkit-mask-image: radial-gradient(circle at 50% 52%, transparent 0 32%, black 62%);
+  animation: speedspin 0.35s linear infinite;
+  transition: opacity 0.25s ease;
+}
+
+@keyframes speedspin {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+  to {
+    transform: rotate(9deg) scale(1.04);
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(0.92);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pop {
+  animation: pop-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes toast-in {
+  0% {
+    transform: translateY(-14px) scale(0.9);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(0) scale(1.04);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+}
+
+.animate-toast {
+  animation: toast-in 1.6s ease both;
+}
+
+@keyframes shine {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shine {
+  background-image: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shine 2.6s ease-in-out infinite;
+}
+
+.boost-bar {
+  background: linear-gradient(90deg, #19e3ff, #1f6bff 45%, #ffc61a);
+}
+
+.scroll-y {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speedlines,
+  .shine {
+    animation: none;
+  }
+}

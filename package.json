@@ -1,0 +1,21 @@
+{
+  "name": "race-rush",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Race Rush — arcade 3D racing (web/mobile/desktop)",
+  "author": "Ing. Mohamed Lemine Khlil",
+  "workspaces": ["shared", "client", "realtime"],
+  "scripts": {
+    "dev": "npm run dev -w client",
+    "dev:realtime": "npm run dev -w realtime",
+    "build": "npm run build -w client",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w client && npm run typecheck -w realtime",
+    "test": "npm run test -w shared && npm run test -w realtime",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
