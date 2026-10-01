@@ -1,6 +1,7 @@
 import type { VehicleId } from '@race-rush/shared';
 import { getEngineHost } from '../game/engine/EngineHost';
 import { getGarageScene, releaseGarageScene } from '../game/garage/GarageScene';
+import { PodiumScene, type PodiumEntry } from '../game/results/PodiumScene';
 
 /**
  * The 3D showroom lives behind every menu screen and is released during races so the
@@ -36,4 +37,23 @@ export const hideBackdrop = (): void => {
 export const garageFraming = (x: number, y: number, zoom = 1): void => {
   if (!active) return;
   getGarageScene(getEngineHost()).setFraming(x, y, zoom);
+};
+
+let podium: PodiumScene | null = null;
+
+/** Results podium (top 3) replaces the showroom while the results screen is open. */
+export const showPodium = (entries: PodiumEntry[], lowQuality: boolean): void => {
+  hideBackdrop();
+  hidePodium();
+  const host = getEngineHost();
+  host.setMenuMode(true);
+  podium = new PodiumScene(host, entries, lowQuality);
+  podium.mount();
+};
+
+export const hidePodium = (): void => {
+  if (!podium) return;
+  podium.dispose();
+  podium = null;
+  getEngineHost().setMenuMode(false);
 };

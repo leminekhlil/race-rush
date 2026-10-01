@@ -1,0 +1,21 @@
+// Usage: node e2e/results-shot.mjs <outPrefix> [width] [height]  — dev offline 1-lap race → results podium screenshot.
+import { chromium } from '@playwright/test';
+const [out = '/tmp/claude-0/shots/results', w = '1280', h = '720'] = process.argv.slice(2);
+const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: +w, height: +h } });
+const errors = [];
+page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+page.on('console', (m) => m.type() === 'error' && errors.push(`console: ${m.text()}`));
+await page.goto(`${BASE}/?dev=1&laps=1&autopilot=1&quality=eco&track=${process.env.TRACK ?? 'city'}`);
+await page.getByTestId('results-screen').waitFor({ timeout: 300000 });
+await page.waitForTimeout(3500);
+await page.screenshot({ path: `${out}.png` });
+await page.setViewportSize({ width: 844, height: 390 });
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${out}-phone.png` });
+await page.setViewportSize({ width: 390, height: 844 });
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `${out}-portrait.png` });
+console.log('ERRORS:', errors.filter((e) => !/vibrate/.test(e)).join('\n') || 'none');
+await browser.close();

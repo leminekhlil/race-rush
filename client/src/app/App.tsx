@@ -1,5 +1,5 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
-import { isVehicleId, NO_UPGRADES, TRACKS } from '@race-rush/shared';
+import { formatRaceTime, isVehicleId, NO_UPGRADES, TRACKS } from '@race-rush/shared';
 import { useStore } from '../state/store';
 import { appStore } from '../state/appStore';
 import { settingsStore } from '../state/settings';
@@ -14,7 +14,7 @@ import { ResultsScreen } from './screens/ResultsScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { NoticeHost } from './components/ui';
 import { actions, currentSelection, getRealtime } from './actions';
-import { hideBackdrop, showBackdrop } from './backdrop';
+import { hideBackdrop, hidePodium, showBackdrop, showPodium } from './backdrop';
 import { AudioEngine } from '../game/audio/AudioEngine';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -75,6 +75,7 @@ const startDevRace = (): boolean => {
 export const App = () => {
   const screen = useStore(appStore, (s) => s.screen);
   const race = useStore(appStore, (s) => s.race);
+  const results = useStore(appStore, (s) => s.results);
   const profile = useStore(appStore, (s) => s.profile);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -88,6 +89,8 @@ export const App = () => {
 
   // 3D backdrop lifecycle: showroom for menus, released during races.
   useEffect(() => {
+    if (screen === 'results') return; // podium effect below
+    hidePodium();
     if (screen === 'race' || screen === 'boot') {
       hideBackdrop();
       return;
@@ -95,6 +98,22 @@ export const App = () => {
     const sel = currentSelection();
     showBackdrop(screen === 'garage', sel.vehicle, sel.color);
   }, [screen, profile]);
+
+  // Results: 3D podium with the top three.
+  useEffect(() => {
+    if (screen !== 'results' || !results) return;
+    const top = results.results.filter((r) => !r.flagged).slice(0, 3);
+    showPodium(
+      top.map((r) => ({
+        vehicle: r.vehicle,
+        color: r.color,
+        name: r.id === results.localId ? 'Toi' : r.name,
+        time: r.finished ? formatRaceTime(r.time) : 'DNF',
+        local: r.id === results.localId,
+      })),
+      settingsStore.get().quality === 'eco',
+    );
+  }, [screen, results]);
 
   let content: ReactNode;
   switch (screen) {
