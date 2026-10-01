@@ -24,20 +24,24 @@ return [
         'monster' => ['name' => 'Monster Truck', 'speed' => 6, 'accel' => 5, 'handling' => 5, 'stability' => 10, 'sort' => 4],
     ],
 
-    'upgrade_stats' => ['engine', 'handling', 'boost'],
+    // Garage reference order: Moteur, Turbo, Freinage, Maniabilité.
+    'upgrade_stats' => ['engine', 'boost', 'brakes', 'handling'],
     'max_upgrade_level' => 5,
     // Cost (v-MRU) to reach level N (index 0 => level 1).
     'upgrade_costs' => [150, 300, 500, 800, 1200],
 
+    // Standard colours (free) match the garage reference swatches; premium paints cost v-MRU.
     'paints' => [
-        ['code' => 'red', 'name' => 'Rouge Rush', 'hex' => '#e3262f', 'price' => 0],
-        ['code' => 'blue', 'name' => 'Bleu Électrique', 'hex' => '#1f6bff', 'price' => 0],
-        ['code' => 'yellow', 'name' => 'Jaune Éclair', 'hex' => '#ffc61a', 'price' => 0],
-        ['code' => 'black', 'name' => 'Noir Carbone', 'hex' => '#17191f', 'price' => 0],
-        ['code' => 'white', 'name' => 'Blanc Glacier', 'hex' => '#eef1f6', 'price' => 0],
+        ['code' => 'red', 'name' => 'Rouge', 'hex' => '#e3262f', 'price' => 0],
+        ['code' => 'blue', 'name' => 'Bleu', 'hex' => '#1f6bff', 'price' => 0],
+        ['code' => 'white', 'name' => 'Blanc', 'hex' => '#eef1f6', 'price' => 0],
+        ['code' => 'black', 'name' => 'Noir', 'hex' => '#1b1d24', 'price' => 0],
+        ['code' => 'yellow', 'name' => 'Jaune', 'hex' => '#ffc61a', 'price' => 0],
+        ['code' => 'violet', 'name' => 'Violet', 'hex' => '#8a3dff', 'price' => 0],
+        ['code' => 'green', 'name' => 'Vert', 'hex' => '#2ecc40', 'price' => 0],
+        ['code' => 'orange', 'name' => 'Orange', 'hex' => '#ff7a1a', 'price' => 0],
         ['code' => 'gold', 'name' => 'Or Champion', 'hex' => '#d9a521', 'price' => 900],
         ['code' => 'neon', 'name' => 'Néon Cyan', 'hex' => '#14e1ff', 'price' => 600],
-        ['code' => 'violet', 'name' => 'Violet Nitro', 'hex' => '#7d3cff', 'price' => 600],
     ],
 
     // Prepared customization categories (locked in the MVP).

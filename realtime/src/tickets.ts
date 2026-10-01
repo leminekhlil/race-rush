@@ -6,7 +6,7 @@ export interface TicketPayload {
   pid: number;
   name: string;
   lvl: number;
-  veh: Record<string, { c: string; u: [number, number, number] }>;
+  veh: Record<string, { c: string; u: number[] }>;
   exp: number;
 }
 

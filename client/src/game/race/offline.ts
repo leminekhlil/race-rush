@@ -1,4 +1,4 @@
-import { PAINTS, VEHICLE_IDS, type GridEntry, type UpgradeLevels, type VehicleId } from '@race-rush/shared';
+import { NO_UPGRADES, PAINTS, VEHICLE_IDS, type GridEntry, type UpgradeLevels, type VehicleId } from '@race-rush/shared';
 import type { RaceConfig } from './RaceSession';
 
 const BOT_NAMES = ['Nitro', 'Viper', 'Blaze', 'Turbo', 'Comet', 'Raptor', 'Flash', 'Storm'];
@@ -35,7 +35,7 @@ export const createOfflineRace = (opts: {
       color,
       isBot: true,
       slot,
-      upgrades: { engine: 0, handling: 0, boost: 0 },
+      upgrades: { ...NO_UPGRADES },
     });
     botIndex++;
   }

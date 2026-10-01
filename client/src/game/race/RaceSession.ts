@@ -671,7 +671,7 @@ export class RaceSession {
         dt,
       );
       const dust = (s.offroad || this.path.def.theme === 'desert') && s.grounded ? clamp(Math.abs(s.speed) / 50, 0, 1) * (r.info.vehicle === 'buggy' ? 1.4 : 0.8) : 0;
-      r.emitters.update({ drifting: s.drifting && s.grounded, boosting: s.boosting, dust, speed: Math.abs(s.speed) });
+      r.emitters.update({ drifting: s.drifting && s.grounded, boosting: s.boosting, dust, speed: Math.abs(s.speed), throttle: s.throttle });
       r.audio?.update({ rpm: s.rpm, throttle: s.throttle, speed: Math.abs(s.speed), drifting: s.drifting && s.grounded, boosting: s.boosting, offroad: s.offroad, x: s.x, y: s.y, z: s.z });
     }
     for (const rr of this.remotes.values()) {
@@ -685,7 +685,7 @@ export class RaceSession {
         { x: p.x, y: p.y, z: p.z, heading: p.h, speed: p.v, steer: p.steer, grounded: !air, vy: 0, roll: lateralG * (t.bodyRoll - t.lean), pitch: 0, suspension: 0, wheelSpin: p.spin, drifting, driftDir: Math.sign(p.steer), braking: (p.f & FLAG_BRAKE) !== 0 },
         dt,
       );
-      rr.emitters.update({ drifting: drifting && !air, boosting, dust: this.path.def.theme === 'desert' && !air ? clamp(Math.abs(p.v) / 50, 0, 1) * 0.8 : 0, speed: Math.abs(p.v) });
+      rr.emitters.update({ drifting: drifting && !air, boosting, dust: this.path.def.theme === 'desert' && !air ? clamp(Math.abs(p.v) / 50, 0, 1) * 0.8 : 0, speed: Math.abs(p.v), throttle: Math.abs(p.v) > 5 ? 1 : 0 });
       const rpm = clamp(Math.abs(p.v) / (t.maxSpeed * t.boostMul), 0, 1);
       rr.audio?.update({ rpm: 0.2 + rpm * 0.75, throttle: 1, speed: Math.abs(p.v), drifting, boosting, offroad: false, x: p.x, y: p.y, z: p.z });
     }

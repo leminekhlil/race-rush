@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MAX_UPGRADE_LEVEL, PAINTS, paintById, VEHICLE_IDS, VEHICLES, type UpgradeStat, type VehicleId } from '@race-rush/shared';
+import { MAX_UPGRADE_LEVEL, NO_UPGRADES, vehicleLevel, PAINTS, paintById, VEHICLE_IDS, VEHICLES, type UpgradeStat, type VehicleId } from '@race-rush/shared';
 import { useStore } from '../../state/store';
 import { appStore, goTo } from '../../state/appStore';
 import { api } from '../../net/api';
@@ -26,7 +26,7 @@ export const GarageScreen = () => {
 
   const owned = profile?.vehicles.find((v) => v.vehicle === viewing);
   const color = owned?.color ?? (viewing === sel.vehicle ? sel.color : 'red');
-  const upgrades = owned?.upgrades ?? { engine: 0, handling: 0, boost: 0 };
+  const upgrades = owned?.upgrades ?? NO_UPGRADES;
   const spec = VEHICLES[viewing];
   const isSelected = sel.vehicle === viewing;
 
@@ -123,7 +123,7 @@ export const GarageScreen = () => {
               </div>
               <div className="text-sm text-white/65">{spec.tagline}</div>
             </div>
-            <span className="rounded-xl bg-volt-500/25 px-2 py-1 font-display text-sm">NIV. {1 + upgrades.engine + upgrades.handling + upgrades.boost}</span>
+            <span className="rounded-xl bg-volt-500/25 px-2 py-1 font-display text-sm">NIV. {vehicleLevel(upgrades)}</span>
           </div>
           <div className="mt-3 grid grid-cols-3 gap-1 rounded-2xl bg-night-950/50 p-1" role="tablist">
             {tabs.map((t) => (

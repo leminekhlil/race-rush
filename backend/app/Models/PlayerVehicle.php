@@ -25,10 +25,10 @@ class PlayerVehicle extends Model
         return $this->hasMany(VehicleUpgrade::class);
     }
 
-    /** @return array{engine:int,handling:int,boost:int} */
+    /** @return array{engine:int,handling:int,boost:int,brakes:int} */
     public function upgradeLevels(): array
     {
-        $levels = ['engine' => 0, 'handling' => 0, 'boost' => 0];
+        $levels = ['engine' => 0, 'handling' => 0, 'boost' => 0, 'brakes' => 0];
         foreach ($this->upgrades as $u) {
             $levels[$u->stat] = (int) $u->level;
         }

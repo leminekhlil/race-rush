@@ -1,17 +1,19 @@
 export type VehicleId = 'sport' | 'moto' | 'buggy' | 'monster';
-export type UpgradeStat = 'engine' | 'handling' | 'boost';
+export type UpgradeStat = 'engine' | 'boost' | 'brakes' | 'handling';
 
 export const VEHICLE_IDS: VehicleId[] = ['sport', 'moto', 'buggy', 'monster'];
-export const UPGRADE_STATS: UpgradeStat[] = ['engine', 'handling', 'boost'];
+/** Display order follows the garage reference: Moteur, Turbo, Freinage, Maniabilité. */
+export const UPGRADE_STATS: UpgradeStat[] = ['engine', 'boost', 'brakes', 'handling'];
 export const MAX_UPGRADE_LEVEL = 5;
 
 export interface UpgradeLevels {
   engine: number;
   handling: number;
   boost: number;
+  brakes: number;
 }
 
-export const NO_UPGRADES: UpgradeLevels = { engine: 0, handling: 0, boost: 0 };
+export const NO_UPGRADES: UpgradeLevels = Object.freeze({ engine: 0, handling: 0, boost: 0, brakes: 0 });
 
 /** Physics + feel parameters. Units: meters, seconds, radians. */
 export interface VehicleTuning {
@@ -61,7 +63,10 @@ export interface VehicleSpec {
   name: string;
   tagline: string;
   /** Display stats 0..10. */
-  stats: { speed: number; accel: number; handling: number; stability: number };
+  stats: { speed: number; accel: number; handling: number; stability: number; turbo: number };
+  /** Class label colour used by the selection screen (reference: yellow / blue / orange / purple). */
+  accent: string;
+  label: string;
   tuning: VehicleTuning;
 }
 
@@ -69,8 +74,10 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   sport: {
     id: 'sport',
     name: 'Sport Car',
-    tagline: 'Vitesse pure, précision nerveuse',
-    stats: { speed: 9, accel: 8, handling: 8, stability: 6 },
+    label: 'Voiture de sport',
+    tagline: 'Rapide et équilibrée',
+    accent: '#ffc61a',
+    stats: { speed: 8.5, accel: 7.5, handling: 8, stability: 6.5, turbo: 7 },
     tuning: {
       maxSpeed: 64,
       accel: 27,
@@ -110,8 +117,10 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   moto: {
     id: 'moto',
     name: 'Motorcycle',
-    tagline: 'Ultra légère, virages éclairs',
-    stats: { speed: 8, accel: 9, handling: 10, stability: 3 },
+    label: 'Moto',
+    tagline: 'Très maniable et rapide',
+    accent: '#2f86ff',
+    stats: { speed: 8, accel: 8.5, handling: 9.5, stability: 4, turbo: 7.5 },
     tuning: {
       maxSpeed: 61,
       accel: 31,
@@ -151,8 +160,10 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   buggy: {
     id: 'buggy',
     name: 'Buggy',
-    tagline: 'Équilibré, roi du sable',
-    stats: { speed: 7, accel: 7, handling: 7, stability: 8 },
+    label: 'Buggy',
+    tagline: 'Tout-terrain et stable',
+    accent: '#ff8a1f',
+    stats: { speed: 7, accel: 7, handling: 7.5, stability: 8, turbo: 7.5 },
     tuning: {
       maxSpeed: 58,
       accel: 24,
@@ -192,8 +203,10 @@ export const VEHICLES: Record<VehicleId, VehicleSpec> = {
   monster: {
     id: 'monster',
     name: 'Monster Truck',
-    tagline: 'Lourd, stable, inarrêtable',
-    stats: { speed: 6, accel: 5, handling: 5, stability: 10 },
+    label: 'Monster Truck',
+    tagline: 'Puissant et robuste',
+    accent: '#a35cff',
+    stats: { speed: 6, accel: 5.5, handling: 5, stability: 9.5, turbo: 6.5 },
     tuning: {
       maxSpeed: 54,
       accel: 17,
@@ -242,6 +255,7 @@ export const tunedVehicle = (id: VehicleId, upgrades: UpgradeLevels = NO_UPGRADE
   const e = clampLevel(upgrades.engine);
   const h = clampLevel(upgrades.handling);
   const b = clampLevel(upgrades.boost);
+  const br = clampLevel(upgrades.brakes);
   return {
     ...base,
     maxSpeed: base.maxSpeed * (1 + 0.016 * e),
@@ -250,14 +264,32 @@ export const tunedVehicle = (id: VehicleId, upgrades: UpgradeLevels = NO_UPGRADE
     grip: base.grip * (1 + 0.04 * h),
     boostCapacity: base.boostCapacity * (1 + 0.08 * b),
     boostMul: base.boostMul + 0.012 * b,
+    brake: base.brake * (1 + 0.06 * br),
+    driftGrip: base.driftGrip * (1 + 0.04 * br),
   };
 };
 
 /** Highest legit planar speed (m/s) a vehicle can reach — used by anti-cheat. */
 export const absoluteMaxSpeed = (id: VehicleId): number => {
-  const t = tunedVehicle(id, { engine: MAX_UPGRADE_LEVEL, handling: MAX_UPGRADE_LEVEL, boost: MAX_UPGRADE_LEVEL });
+  const t = tunedVehicle(id, { engine: MAX_UPGRADE_LEVEL, handling: MAX_UPGRADE_LEVEL, boost: MAX_UPGRADE_LEVEL, brakes: MAX_UPGRADE_LEVEL });
   return t.maxSpeed * t.boostMul;
 };
+
+/** Displayed stats (0..10, one decimal) including upgrades — mirrors what upgrades change in tuning. */
+export const displayStats = (id: VehicleId, u: UpgradeLevels = NO_UPGRADES) => {
+  const st = VEHICLES[id].stats;
+  const c = (v: number) => Math.round(Math.min(10, v) * 10) / 10;
+  return {
+    speed: c(st.speed + u.engine * 0.25),
+    accel: c(st.accel + u.engine * 0.3),
+    handling: c(st.handling + u.handling * 0.3),
+    stability: c(st.stability + u.handling * 0.1 + u.brakes * 0.15),
+    turbo: c(st.turbo + u.boost * 0.4),
+  };
+};
+
+/** Vehicle level shown in the garage: 1 + total upgrade levels. */
+export const vehicleLevel = (u: UpgradeLevels): number => 1 + u.engine + u.handling + u.boost + (u.brakes ?? 0);
 
 export interface PaintColor {
   id: string;
@@ -267,15 +299,18 @@ export interface PaintColor {
   premium: boolean;
 }
 
+/** Standard colours match the garage reference swatches; premium ones are bought with v-MRU. */
 export const PAINTS: PaintColor[] = [
-  { id: 'red', name: 'Rouge Rush', hex: '#e3262f', metallic: 0.35, premium: false },
-  { id: 'blue', name: 'Bleu Électrique', hex: '#1f6bff', metallic: 0.35, premium: false },
-  { id: 'yellow', name: 'Jaune Éclair', hex: '#ffc61a', metallic: 0.3, premium: false },
-  { id: 'black', name: 'Noir Carbone', hex: '#17191f', metallic: 0.5, premium: false },
-  { id: 'white', name: 'Blanc Glacier', hex: '#eef1f6', metallic: 0.25, premium: false },
+  { id: 'red', name: 'Rouge', hex: '#e3262f', metallic: 0.35, premium: false },
+  { id: 'blue', name: 'Bleu', hex: '#1f6bff', metallic: 0.35, premium: false },
+  { id: 'white', name: 'Blanc', hex: '#eef1f6', metallic: 0.25, premium: false },
+  { id: 'black', name: 'Noir', hex: '#1b1d24', metallic: 0.5, premium: false },
+  { id: 'yellow', name: 'Jaune', hex: '#ffc61a', metallic: 0.3, premium: false },
+  { id: 'violet', name: 'Violet', hex: '#8a3dff', metallic: 0.45, premium: false },
+  { id: 'green', name: 'Vert', hex: '#2ecc40', metallic: 0.35, premium: false },
+  { id: 'orange', name: 'Orange', hex: '#ff7a1a', metallic: 0.35, premium: false },
   { id: 'gold', name: 'Or Champion', hex: '#d9a521', metallic: 0.95, premium: true },
   { id: 'neon', name: 'Néon Cyan', hex: '#14e1ff', metallic: 0.6, premium: true },
-  { id: 'violet', name: 'Violet Nitro', hex: '#7d3cff', metallic: 0.7, premium: true },
 ];
 
 export const paintById = (id: string): PaintColor => PAINTS.find((p) => p.id === id) ?? PAINTS[0];

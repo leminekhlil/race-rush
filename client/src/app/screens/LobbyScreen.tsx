@@ -1,6 +1,6 @@
 import { MAX_PLAYERS, PAINTS, paintById, TRACKS, VEHICLE_IDS, VEHICLES, type VehicleId } from '@race-rush/shared';
 import { useStore } from '../../state/store';
-import { appStore, notify } from '../../state/appStore';
+import { appStore, notify, openVehicleSelect } from '../../state/appStore';
 import { actions, getRealtime } from '../actions';
 import { Button, Panel, ScreenHeader, SectionTitle, VehicleIcon } from '../components/ui';
 import { AudioEngine } from '../../game/audio/AudioEngine';
@@ -92,7 +92,12 @@ export const LobbyScreen = () => {
 
           <Panel className="flex flex-col gap-3 p-4">
             <div>
-              <SectionTitle>Ton véhicule</SectionTitle>
+              <div className="flex items-center justify-between">
+                <SectionTitle>Ton véhicule</SectionTitle>
+                <button type="button" disabled={me?.ready} onClick={() => openVehicleSelect({ kind: 'lobby' })} className="mb-2 rounded-lg px-2 py-0.5 text-xs font-bold text-gold-300 hover:bg-white/5 disabled:opacity-40" data-testid="lobby-open-select">
+                  VOIR LES VÉHICULES ›
+                </button>
+              </div>
               <div className="grid grid-cols-4 gap-2">
                 {VEHICLE_IDS.map((v) => (
                   <button

@@ -1,4 +1,4 @@
-import { isVehicleId, PAINTS, type LobbyDTO, type UpgradeLevels, type VehicleId } from '@race-rush/shared';
+import { isVehicleId, NO_UPGRADES, PAINTS, type LobbyDTO, type UpgradeLevels, type VehicleId } from '@race-rush/shared';
 import { api, ApiError, hasToken } from '../net/api';
 import { RealtimeClient } from '../net/realtime';
 import { netBridge } from '../net/raceBridge';
@@ -20,7 +20,7 @@ const realtime = new RealtimeClient({
   onLobby: (lobby: LobbyDTO | null) => {
     appStore.set({ lobby });
     const screen = appStore.get().screen;
-    if (lobby && !lobby.solo && screen !== 'race' && screen !== 'results' && screen !== 'lobby') goTo('lobby');
+    if (lobby && !lobby.solo && screen !== 'race' && screen !== 'results' && screen !== 'lobby' && screen !== 'select') goTo('lobby');
     if (!lobby && screen === 'lobby') goTo('play');
   },
   onRaceLoad: (load) => {
@@ -54,7 +54,7 @@ export const getRealtime = () => realtime;
 
 export const currentSelection = (): { vehicle: VehicleId; color: string; upgrades: UpgradeLevels } => {
   const p = appStore.get().profile;
-  if (!p) return { ...offlineSelection, upgrades: { engine: 0, handling: 0, boost: 0 } };
+  if (!p) return { ...offlineSelection, upgrades: { ...NO_UPGRADES } };
   const v = p.vehicles.find((x) => x.vehicle === p.selectedVehicle) ?? p.vehicles[0];
   return { vehicle: v.vehicle, color: v.color, upgrades: v.upgrades };
 };
@@ -236,6 +236,20 @@ export const actions = {
       return;
     }
     await actions.garage(api.paint, vehicle, color);
+  },
+
+  /** Persists the vehicle + colour chosen on the selection screen (server when online, local otherwise). */
+  async applySelection(vehicle: VehicleId, color: string): Promise<void> {
+    const p = appStore.get().profile;
+    if (!p) {
+      offlineSelection.vehicle = vehicle;
+      if (!PAINTS.find((x) => x.id === color)?.premium) offlineSelection.color = color;
+      appStore.set({});
+      return;
+    }
+    const current = p.vehicles.find((v) => v.vehicle === vehicle);
+    if (current && current.color !== color) await actions.garage(api.paint, vehicle, color);
+    if (p.selectedVehicle !== vehicle) await actions.garage(api.select, vehicle);
   },
 
   rematch(): void {

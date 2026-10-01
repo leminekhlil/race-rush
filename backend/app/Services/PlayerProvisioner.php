@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Log;
 
 class PlayerProvisioner
 {
-    private const DEFAULT_PAINTS = ['sport' => 'red', 'moto' => 'blue', 'buggy' => 'yellow', 'monster' => 'white'];
+    /** Default colours from the vehicle selection reference. */
+    private const DEFAULT_PAINTS = ['sport' => 'red', 'moto' => 'red', 'buggy' => 'yellow', 'monster' => 'violet'];
 
     public function __construct(private readonly WalletService $wallet) {}
 

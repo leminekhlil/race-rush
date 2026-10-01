@@ -1,5 +1,5 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
-import { isVehicleId, TRACKS } from '@race-rush/shared';
+import { isVehicleId, NO_UPGRADES, TRACKS } from '@race-rush/shared';
 import { useStore } from '../state/store';
 import { appStore } from '../state/appStore';
 import { settingsStore } from '../state/settings';
@@ -7,6 +7,7 @@ import { createOfflineRace } from '../game/race/offline';
 import { RaceScreen } from './screens/RaceScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { PlayScreen } from './screens/PlayScreen';
+import { VehicleSelectScreen } from './screens/VehicleSelectScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { GarageScreen } from './screens/GarageScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
@@ -62,7 +63,7 @@ const startDevRace = (): boolean => {
     laps: Math.max(1, Math.min(5, Number(q.get('laps') ?? 3))),
     vehicle: isVehicleId(vehicle) ? vehicle : 'sport',
     color: q.get('color') ?? 'red',
-    upgrades: { engine: 0, handling: 0, boost: 0 },
+    upgrades: { ...NO_UPGRADES },
     playerName: 'Dev',
     bots: Math.max(0, Math.min(4, Number(q.get('bots') ?? 4))),
     autopilot: q.get('autopilot') === '1',
@@ -105,6 +106,9 @@ export const App = () => {
       break;
     case 'play':
       content = <PlayScreen />;
+      break;
+    case 'select':
+      content = <VehicleSelectScreen />;
       break;
     case 'lobby':
       content = <LobbyScreen />;

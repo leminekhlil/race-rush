@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TRACKS, VEHICLES } from '@race-rush/shared';
 import { useStore } from '../../state/store';
-import { appStore, goTo } from '../../state/appStore';
+import { appStore, goTo, openVehicleSelect } from '../../state/appStore';
 import { actions, currentSelection } from '../actions';
 import { Button, Panel, ScreenHeader, SectionTitle, VehicleIcon, VmruBadge } from '../components/ui';
 import { paintById } from '@race-rush/shared';
@@ -67,7 +67,7 @@ export const PlayScreen = () => {
         onBack={() => goTo('home')}
         right={
           <>
-            <button type="button" onClick={() => goTo('garage')} data-testid="play-vehicle-chip" className="glass flex items-center gap-2 rounded-2xl px-3 py-1.5 transition-transform active:scale-95" aria-label="Changer de véhicule">
+            <button type="button" onClick={() => openVehicleSelect({ kind: 'browse' })} data-testid="play-vehicle-chip" className="glass flex items-center gap-2 rounded-2xl px-3 py-1.5 transition-transform active:scale-95" aria-label="Changer de véhicule">
               <VehicleIcon id={sel.vehicle} color={paintById(sel.color).hex} className="h-6 w-10" />
               <span className="hidden font-display text-sm sm:inline">{VEHICLES[sel.vehicle].name}</span>
               <span className="text-xs font-bold text-gold-300">CHANGER ›</span>
@@ -85,7 +85,7 @@ export const PlayScreen = () => {
               <p className="text-sm leading-relaxed text-white/65">{online ? 'Résultats validés par le serveur : XP et v-MRU.' : 'Entraînement hors ligne (sans récompense).'}</p>
             </div>
             <TrackPicker prefix="quick" value={quickTrack} onChange={setQuickTrack} />
-            <Button variant="gold" size="lg" disabled={busy} onClick={() => actions.playQuick(quickTrack)} data-testid="quick-race" className="mt-auto">
+            <Button variant="gold" size="lg" disabled={busy} onClick={() => openVehicleSelect({ kind: 'quick', trackId: quickTrack })} data-testid="quick-race" className="mt-auto">
               {busy ? '…' : "C'EST PARTI"}
             </Button>
           </Panel>

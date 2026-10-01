@@ -17,7 +17,7 @@ class TicketService
         $vehicles = [];
         foreach ($profile->vehicles as $pv) {
             $u = $pv->upgradeLevels();
-            $vehicles[$pv->vehicle->code] = ['c' => $pv->paint_code, 'u' => [$u['engine'], $u['handling'], $u['boost']]];
+            $vehicles[$pv->vehicle->code] = ['c' => $pv->paint_code, 'u' => [$u['engine'], $u['handling'], $u['boost'], $u['brakes']]];
         }
         $exp = time() + (int) config('racerush.ticket_ttl');
         $payload = [

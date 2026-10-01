@@ -9,7 +9,7 @@ import { particleTexture } from '../scene/textures';
 import type { VehicleModel } from '../scene/VehicleFactory';
 
 export interface VehicleEmitters {
-  update(opts: { drifting: boolean; boosting: boolean; dust: number; speed: number }): void;
+  update(opts: { drifting: boolean; boosting: boolean; dust: number; speed: number; throttle: number }): void;
   dispose(): void;
 }
 
@@ -130,9 +130,10 @@ export class Effects {
       f.emitter = anchor(ex);
       f.minEmitBox.setAll(-0.04);
       f.maxEmitBox.setAll(0.04);
-      f.color1 = new Color4(0.35, 0.75, 1, 1);
-      f.color2 = new Color4(1, 0.8, 0.3, 1);
-      f.colorDead = new Color4(1, 0.2, 0.05, 0);
+      // Blue exhaust flames (reference look).
+      f.color1 = new Color4(0.3, 0.7, 1, 1);
+      f.color2 = new Color4(0.65, 0.92, 1, 1);
+      f.colorDead = new Color4(0.25, 0.2, 1, 0);
       f.minSize = 0.25;
       f.maxSize = 0.6;
       f.minLifeTime = 0.06;
@@ -149,10 +150,10 @@ export class Effects {
     }
 
     return {
-      update: ({ drifting, boosting, dust, speed }) => {
+      update: ({ drifting, boosting, dust, speed, throttle }) => {
         const k = this.scale * (full ? 1 : 0.5);
         smoke.emitRate = (drifting ? 55 : 0) * k + dust * 12 * k;
-        for (const f of flames) f.emitRate = boosting ? 160 * k : speed > 50 ? 6 * k : 0;
+        for (const f of flames) f.emitRate = boosting ? 170 * k : throttle > 0 && speed > 3 ? 28 * k : 0;
       },
       dispose: () => {
         systems.forEach((s) => s.dispose());

@@ -2,7 +2,10 @@ import type { GridEntry, LobbyDTO, ResultDTO, UpgradeLevels, VehicleId } from '@
 import type { RaceConfig } from '../game/race/RaceSession';
 import { createStore } from './store';
 
-export type Screen = 'boot' | 'home' | 'play' | 'lobby' | 'race' | 'results' | 'garage' | 'settings';
+export type Screen = 'boot' | 'home' | 'play' | 'select' | 'lobby' | 'race' | 'results' | 'garage' | 'settings';
+
+/** What the vehicle selection screen confirms into. */
+export type PendingSelect = { kind: 'quick'; trackId: string } | { kind: 'lobby' } | { kind: 'browse' };
 
 export interface PlayerVehicle {
   vehicle: VehicleId;
@@ -62,6 +65,7 @@ export interface AppState {
   results: RaceResultsState | null;
   notice: { text: string; tone: 'info' | 'error' | 'good'; id: number } | null;
   busy: boolean;
+  pendingSelect: PendingSelect | null;
 }
 
 export const appStore = createStore<AppState>({
@@ -75,11 +79,14 @@ export const appStore = createStore<AppState>({
   results: null,
   notice: null,
   busy: false,
+  pendingSelect: null,
 });
 
 let noticeId = 0;
 export const notify = (text: string, tone: 'info' | 'error' | 'good' = 'info') => appStore.set({ notice: { text, tone, id: ++noticeId } });
 
 export const goTo = (screen: Screen) => appStore.set({ screen });
+
+export const openVehicleSelect = (pending: PendingSelect) => appStore.set({ pendingSelect: pending, screen: 'select' });
 
 export type { GridEntry };

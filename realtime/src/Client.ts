@@ -1,5 +1,5 @@
 import type { WebSocket } from 'ws';
-import { MAX_STATE_RATE, type ServerMessage, type VehicleId } from '@race-rush/shared';
+import { MAX_STATE_RATE, NO_UPGRADES, type ServerMessage, type VehicleId } from '@race-rush/shared';
 import type { TicketPayload } from './tickets';
 
 let anonCounter = 0;
@@ -57,9 +57,9 @@ export class Client {
   }
 
   /** Upgrade levels for a vehicle, from the signed ticket (server truth at ticket time). */
-  upgradesFor(vehicle: VehicleId): { engine: number; handling: number; boost: number } {
+  upgradesFor(vehicle: VehicleId): { engine: number; handling: number; boost: number; brakes: number } {
     const u = this.ticket?.veh?.[vehicle]?.u;
-    return u ? { engine: u[0] ?? 0, handling: u[1] ?? 0, boost: u[2] ?? 0 } : { engine: 0, handling: 0, boost: 0 };
+    return u ? { engine: u[0] ?? 0, handling: u[1] ?? 0, boost: u[2] ?? 0, brakes: u[3] ?? 0 } : { ...NO_UPGRADES };
   }
 
   /** A paint can be used if it is free, or if the ticket shows the player applied it in the garage (owned). */

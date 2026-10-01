@@ -45,9 +45,10 @@ class GarageTest extends ApiTestCase
         $p = $this->auth($g['token'])->postJson('/api/garage/paint', ['vehicle' => 'sport', 'color' => 'blue'])->assertOk()->json('profile');
         $this->assertSame('blue', collect($p['vehicles'])->firstWhere('vehicle', 'sport')['color']);
 
+        $this->auth($g['token'])->postJson('/api/garage/paint', ['vehicle' => 'sport', 'color' => 'green'])->assertOk();
         $this->auth($g['token'])->postJson('/api/garage/paint', ['vehicle' => 'sport', 'color' => 'neon'])->assertStatus(422)->assertJson(['error' => 'paint_locked']);
-        // 600 v-MRU paint with a 500 balance: refused, nothing debited.
-        $this->auth($g['token'])->postJson('/api/garage/cosmetics/violet/purchase')->assertStatus(422)->assertJson(['error' => 'insufficient_funds']);
+        // 900 v-MRU paint with a 500 balance: refused, nothing debited.
+        $this->auth($g['token'])->postJson('/api/garage/cosmetics/gold/purchase')->assertStatus(422)->assertJson(['error' => 'insufficient_funds']);
         $this->auth($g['token'])->getJson('/api/me')->assertJsonPath('profile.balance', 500);
     }
 
@@ -62,6 +63,18 @@ class GarageTest extends ApiTestCase
         $this->auth($g['token'])->postJson('/api/garage/cosmetics/neon/purchase')->assertStatus(422)->assertJson(['error' => 'already_owned']);
         $this->auth($g['token'])->postJson('/api/garage/paint', ['vehicle' => 'moto', 'color' => 'neon'])->assertOk();
         $this->auth($g['token'])->postJson('/api/garage/cosmetics/wheels_neon/purchase')->assertStatus(422)->assertJson(['error' => 'not_available']);
+    }
+
+    public function test_brakes_upgrade_is_the_fourth_line(): void
+    {
+        $g = $this->guest();
+        $p = $this->auth($g['token'])->postJson('/api/garage/upgrade', ['vehicle' => 'buggy', 'stat' => 'brakes'])->assertOk()->json('profile');
+        $buggy = collect($p['vehicles'])->firstWhere('vehicle', 'buggy');
+        $this->assertSame(1, $buggy['upgrades']['brakes']);
+        $this->assertSame(2, $buggy['level']);
+        $ticket = $this->auth($g['token'])->postJson('/api/realtime/ticket')->json('ticket');
+        $payload = app(\App\Services\TicketService::class)->verify($ticket);
+        $this->assertSame([0, 0, 0, 1], $payload['veh']['buggy']['u']);
     }
 
     public function test_cannot_select_unknown_vehicle(): void

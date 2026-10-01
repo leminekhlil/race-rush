@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Cosmetic;
 use App\Models\PlayerProfile;
 
 class ProfilePresenter
@@ -18,7 +19,7 @@ class ProfilePresenter
                 'vehicle' => $pv->vehicle->code,
                 'owned' => true,
                 'color' => $pv->paint_code,
-                'level' => 1 + $u['engine'] + $u['handling'] + $u['boost'],
+                'level' => 1 + $u['engine'] + $u['handling'] + $u['boost'] + $u['brakes'],
                 'upgrades' => $u,
             ];
         });
@@ -33,7 +34,8 @@ class ProfilePresenter
             'balance' => (int) $p->vmru_balance,
             'selectedVehicle' => $p->selected_vehicle,
             'vehicles' => $vehicles,
-            'cosmetics' => $p->cosmetics->pluck('code')->values(),
+            // Free paints are always available (also to accounts created before a colour was added).
+            'cosmetics' => $p->cosmetics->pluck('code')->merge(Cosmetic::where('type', 'paint')->where('price', 0)->pluck('code'))->unique()->values(),
             'racesPlayed' => (int) $p->races_played,
             'wins' => (int) $p->wins,
         ];

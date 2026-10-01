@@ -15,7 +15,8 @@ class AuthAndProfileTest extends ApiTestCase
         $this->assertSame(1, $p['level']);
         $this->assertSame(500, $p['balance']);
         $this->assertCount(4, $p['vehicles']);
-        $this->assertEqualsCanonicalizing(['red', 'blue', 'yellow', 'black', 'white'], $p['cosmetics']);
+        $this->assertEqualsCanonicalizing(['red', 'blue', 'white', 'black', 'yellow', 'violet', 'green', 'orange'], $p['cosmetics']);
+        $this->assertSame('violet', collect($p['vehicles'])->firstWhere('vehicle', 'monster')['color']);
 
         $profile = PlayerProfile::where('user_id', (int) $p['id'])->first();
         $this->assertSame(500, app(WalletService::class)->ledgerBalance($profile));

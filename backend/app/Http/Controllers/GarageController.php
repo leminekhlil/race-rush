@@ -64,7 +64,7 @@ class GarageController extends Controller
         if (! $cosmetic) {
             throw new GameRuleException('unknown_paint', 'Peinture inconnue.');
         }
-        if (! $p->cosmetics()->whereKey($cosmetic->id)->exists()) {
+        if ($cosmetic->price > 0 && ! $p->cosmetics()->whereKey($cosmetic->id)->exists()) {
             throw new GameRuleException('paint_locked', 'Peinture non débloquée.');
         }
         $pv->paint_code = $cosmetic->code;
