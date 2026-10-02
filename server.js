@@ -1,0 +1,10 @@
+import express from 'express';
+import { createServer } from 'node:http';
+import { WebSocketServer } from 'ws';
+const app = express();
+app.get('/health', (req,res) => res.json({ok:true,service:'racerush-websocket-probe'}));
+app.get('/', (req,res) => res.type('html').send(`<!doctype html><html lang="fr"><meta charset="utf-8"><title>Race Rush — test WebSocket</title><h1>Race Rush — test WebSocket Business</h1><p id="result">Test de connexion…</p><script>const result=document.getElementById('result');const ws=new WebSocket('wss://'+location.host+'/ws');const timer=setTimeout(()=>{result.textContent='ÉCHEC : délai dépassé';ws.close()},10000);ws.onopen=()=>ws.send('racerush-probe');ws.onmessage=e=>{clearTimeout(timer);result.textContent=e.data==='racerush-probe'?'SUCCÈS : WebSocket entrant et échange aller-retour validés':'ÉCHEC : réponse incorrecte';ws.close()};ws.onerror=()=>{clearTimeout(timer);result.textContent='ÉCHEC : connexion WebSocket refusée'}</script></html>`));
+const server=createServer(app);
+const wss=new WebSocketServer({server,path:'/ws',maxPayload:1024});
+wss.on('connection', ws=>{ const timeout=setTimeout(()=>ws.close(),15000);ws.on('message',data=>ws.send(data.toString()));ws.on('close',()=>clearTimeout(timeout));});
+server.listen(Number(process.env.PORT||3000),'0.0.0.0',()=>console.log('Race Rush WebSocket probe ready'));
