@@ -9,6 +9,16 @@ export interface Settings {
   haptics: boolean;
   showFps: boolean;
   playerName: string;
+  /** Visual only: City by day or by night (never affects the simulation). */
+  timeOfDay: 'day' | 'night';
+  musicVolume: number;
+  sfxVolume: number;
+  /** Selected background music id ('off' = silence, 'shuffle' = rotate the playlist). */
+  musicTrack: string;
+  /** Race announcer voice. */
+  announcer: boolean;
+  /** Cinematic intro already seen (it becomes skippable / shortened). */
+  introSeen: boolean;
 }
 
 const KEY = 'raceRush.settings.v1';
@@ -23,6 +33,12 @@ const defaults = (): Settings => ({
   haptics: true,
   showFps: false,
   playerName: '',
+  timeOfDay: 'day',
+  musicVolume: 0.55,
+  sfxVolume: 0.9,
+  musicTrack: 'shuffle',
+  announcer: true,
+  introSeen: false,
 });
 
 const load = (): Settings => {

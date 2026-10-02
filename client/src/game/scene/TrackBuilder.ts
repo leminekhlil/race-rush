@@ -13,6 +13,9 @@ import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { createRng, type TrackPath } from '@race-rush/shared';
 import { extrudeAlongTrack, GeometryBatch } from './geometry';
 import { buildLandmarks, planLandmarks } from './landmarks';
+import { buildCity } from './city/CityBuilder';
+import { lightPoolTexture, nightSkyTexture } from './city/cityTextures';
+import { Constants } from '@babylonjs/core/Engines/constants';
 import {
   bannerTexture,
   barrierTexture,
@@ -20,7 +23,6 @@ import {
   chevronTexture,
   crownBannerTexture,
   curbTexture,
-  facadeTexture,
   groundTexture,
   rampTexture,
   roadSignTexture,
@@ -59,9 +61,10 @@ const embankment = (h: number) => 2 + Math.max(0, h) * 1.8;
  * Builds the renderable track + environment from a TrackPath. Everything is procedural so the
  * same code serves City and Desert (TrackDefinition-driven).
  */
-export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number): BuiltTrack => {
+export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number, opts: { night?: boolean } = {}): BuiltTrack => {
   const def = path.def;
   const desert = def.theme === 'desert';
+  const night = !!opts.night && !desert;
   const pal = def.palette;
   const disposables: { dispose(): void }[] = [];
   const animated: ((dt: number, t: number) => void)[] = [];
@@ -70,7 +73,7 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
   // ---------- Sky & ground ----------
   const sky = CreateSphere('sky', { diameter: 1800, segments: 12, sideOrientation: Mesh.BACKSIDE }, scene);
   const skyMat = mat(scene, 'skyMat', '#000000', { unlit: true });
-  skyMat.emissiveTexture = skyTexture(scene, pal.sky, pal.horizon, desert);
+  skyMat.emissiveTexture = night ? nightSkyTexture(scene) : skyTexture(scene, pal.sky, pal.horizon, desert);
   skyMat.fogEnabled = false;
   sky.material = skyMat;
   sky.infiniteDistance = true;
@@ -333,11 +336,26 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
   poleMesh.unfreezeWorldMatrix();
   const head = CreateBox('lampHead', { width: 0.7, height: 0.2, depth: 1.2 }, scene);
   head.bakeTransformIntoVertices(Matrix.Translation(0, 8.75, 3.1));
-  head.material = mat(scene, 'lampHeadMat', '#e9eef5', { emissive: '#3a3f48' });
+  head.material = mat(scene, 'lampHeadMat', '#e9eef5', { emissive: night ? '#ffe2a8' : '#3a3f48' });
   head.isPickable = false;
   const lampBuf = new Float32Array(lampMatrices);
   poleMesh.thinInstanceSetBuffer('matrix', lampBuf, 16, true);
   head.thinInstanceSetBuffer('matrix', lampBuf.slice(), 16, true);
+  if (night && lampMatrices.length) {
+    // Warm light pools on the road under every lamp (additive decals instead of dynamic lights).
+    const pool = CreateGround('lightPool', { width: 16, height: 16 }, scene);
+    pool.bakeTransformIntoVertices(Matrix.Translation(0, 0.09, 4.2));
+    const pm = new StandardMaterial('lightPoolMat', scene);
+    pm.disableLighting = true;
+    const pt = lightPoolTexture(scene);
+    pm.emissiveTexture = pt;
+    pm.opacityTexture = pt;
+    pm.alphaMode = Constants.ALPHA_ADD;
+    pm.fogEnabled = true;
+    pool.material = pm;
+    pool.isPickable = false;
+    pool.thinInstanceSetBuffer('matrix', lampBuf.slice(), 16, true);
+  }
 
   // Chevron boards on the outside of tight corners.
   const chevMat = mat(scene, 'chevMat', '#000000', { emissive: '#ffffff', unlit: true });
@@ -366,7 +384,17 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
   buildBannersAndSigns(scene, path, desert, plan.skipRoadside);
   if (!desert) buildPalms(scene, path, rng, clearOf, decorDensity);
   if (desert) buildDesertDecor(scene, path, rng, clearOf, decorDensity, minX, maxX, minZ, maxZ, animated);
-  else buildCityDecor(scene, path, rng, clearOf, decorDensity, minX, maxX, minZ, maxZ, animated);
+  else {
+    const city = buildCity(scene, path, {
+      night,
+      density: decorDensity,
+      clearOf,
+      setbackAt: (s) => path.barrierOffset(s) + BARRIER_T + embankment(path.baseHeight(s)),
+      skipRoadside: plan.skipRoadside,
+      rng,
+    });
+    animated.push((dt, t) => city.update(dt, t));
+  }
 
   // Billboards near the track.
   const boards = desert ? ['DUNE CANYON', 'RACE RUSH', 'v-MRU'] : ['RACE RUSH', 'BOOST!', 'v-MRU', 'PALM CITY'];
@@ -414,58 +442,6 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
 };
 
 type ClearFn = (x: number, z: number, r: number) => boolean;
-
-const buildCityDecor = (
-  scene: Scene,
-  path: TrackPath,
-  rng: () => number,
-  clearOf: ClearFn,
-  density: number,
-  minX: number,
-  maxX: number,
-  minZ: number,
-  maxZ: number,
-  animated: ((dt: number, t: number) => void)[],
-) => {
-  const facade = facadeTexture(scene);
-  const bMat = new StandardMaterial('buildingMat', scene);
-  bMat.diffuseTexture = facade;
-  bMat.emissiveColor = new Color3(0.12, 0.12, 0.13);
-  bMat.specularColor = new Color3(0.08, 0.08, 0.1);
-  // Pastel tropical facades + a few glass towers in the distance.
-  const tints = ['#f4a259', '#f28fad', '#6cc6c9', '#f3e2bd', '#7fb0e6', '#b7a4e0', '#f6d36b', '#ffffff'].map((h) => Color3.FromHexString(h));
-  const glass = Color3.FromHexString('#6f9fd8');
-  const batch = new GeometryBatch();
-  const roofs = new GeometryBatch();
-  const cell = 30;
-  const margin = 220;
-  for (let x = minX - margin; x <= maxX + margin; x += cell) {
-    for (let z = minZ - margin; z <= maxZ + margin; z += cell) {
-      if (rng() > 0.82 * density + 0.1) continue;
-      const sx = 12 + rng() * 14;
-      const sz = 12 + rng() * 14;
-      const px = x + (rng() - 0.5) * 8;
-      const pz = z + (rng() - 0.5) * 8;
-      const radius = Math.hypot(sx, sz) / 2;
-      if (!clearOf(px, pz, radius)) continue;
-      const p = path.project(px, pz);
-      const distToTrack = Math.abs(p.lateral);
-      const far = distToTrack > 90;
-      const tall = far ? 30 + rng() * 60 : 10 + rng() * 22;
-      const yaw = Math.atan2(path.txs[p.index], path.tzs[p.index]) + (rng() < 0.5 ? 0 : Math.PI / 2);
-      const tint = far && rng() < 0.5 ? glass : tints[Math.floor(rng() * tints.length)];
-      batch.box(px, tall / 2, pz, sx, tall, sz, yaw, tint, 1 / 6.5);
-      // Roof parapet / water tank details.
-      roofs.box(px, tall + 0.3, pz, sx + 0.3, 0.6, sz + 0.3, yaw, Color3.FromHexString('#e9e4da'));
-      if (rng() < 0.3) roofs.box(px + (rng() - 0.5) * sx * 0.4, tall + 1.4, pz, 2.4, 2.2, 2.4, yaw, Color3.FromHexString('#9aa2ad'));
-    }
-  }
-  batch.build('buildings', scene, bMat, true);
-  const rm = new StandardMaterial('roofMat', scene);
-  rm.specularColor = Color3.Black();
-  roofs.build('roofs', scene, rm, true);
-  void animated;
-};
 
 /** Pink crown banners on poles + green overhead "RACE RUSH" signs (city) along the circuit. */
 const buildBannersAndSigns = (scene: Scene, path: TrackPath, desert: boolean, skip: (s: number) => boolean) => {

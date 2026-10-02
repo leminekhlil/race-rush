@@ -12,7 +12,6 @@ import { CreateLathe } from '@babylonjs/core/Meshes/Builders/latheBuilder';
 import { CreateCylinder } from '@babylonjs/core/Meshes/Builders/cylinderBuilder';
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
-import { CreateCapsule } from '@babylonjs/core/Meshes/Builders/capsuleBuilder';
 import { CreateTorus } from '@babylonjs/core/Meshes/Builders/torusBuilder';
 import { paintById, type VehicleId } from '@race-rush/shared';
 import type { VehicleModel, WheelRig } from '../VehicleFactory';
@@ -561,6 +560,7 @@ export const createSmoothVehicle = (scene: Scene, id: VehicleId, paintId: string
   blobMat.specularColor = Color3.Black();
   blobMat.disableLighting = true;
   blobMat.alpha = 0.45;
+  blobMat.fogEnabled = false;
   blob.material = blobMat;
   blob.parent = root;
   blob.isPickable = false;

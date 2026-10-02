@@ -385,6 +385,7 @@ const shadowBlob = (scene: Scene, id: VehicleId, name: string, parent: Transform
   blobMat.specularColor = Color3.Black();
   blobMat.disableLighting = true;
   blobMat.alpha = 0.45;
+  blobMat.fogEnabled = false;
   blob.material = blobMat;
   blob.parent = parent;
   blob.isPickable = false;

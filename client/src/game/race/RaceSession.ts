@@ -1,11 +1,13 @@
 import { Scene } from '@babylonjs/core/scene';
-import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
 import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
 import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent';
 import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
+import { SpotLight } from '@babylonjs/core/Lights/spotLight';
+import { setupPostFx } from '../render/postFx';
+import { setupAtmosphere } from '../render/atmosphere';
 import '@babylonjs/core/Layers/effectLayerSceneComponent';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
@@ -44,7 +46,6 @@ import type { EngineHost } from '../engine/EngineHost';
 import { buildTrack, type BuiltTrack } from '../scene/TrackBuilder';
 import { createVehicleModel, type VehicleModel } from '../scene/VehicleFactory';
 import { prepareVehicles } from '../assets/VehicleAssets';
-import { applyEnvironment } from '../assets/environment';
 import { nameTagTexture } from '../scene/textures';
 import { DynamicRaceCamera } from '../camera/DynamicRaceCamera';
 import { InputManager } from '../input/InputManager';
@@ -128,6 +129,7 @@ export class RaceSession {
   private remotes = new Map<string, RemoteRacer>();
   private shadow: ShadowGenerator | null = null;
   private sun!: DirectionalLight;
+  private night = false;
   private phase: RacePhase = 'loading';
   private acc = 0;
   private raceTime = 0;
@@ -170,28 +172,16 @@ export class RaceSession {
   async load(): Promise<void> {
     const q = this.host.quality;
     const scene = this.scene;
-    const pal = this.path.def.palette;
     const desert = this.path.def.theme === 'desert';
     this.setLoading(0.1, 'Construction du circuit…');
     await loadFonts();
     await nextFrame();
 
-    scene.clearColor = Color4.FromHexString(pal.fog + 'ff');
-    scene.fogMode = Scene.FOGMODE_EXP2;
-    scene.fogDensity = q.fogDensity * (desert ? 0.6 : 0.7);
-    scene.fogColor = Color3.FromHexString(pal.fog);
-    scene.ambientColor = new Color3(0.2, 0.22, 0.3);
-
-    const hemi = new HemisphericLight('hemi', new Vector3(0.2, 1, 0.1), scene);
-    // Sunny daytime lighting for both maps (references).
-    hemi.intensity = desert ? 0.95 : 0.95;
-    hemi.diffuse = desert ? Color3.FromHexString('#fff1d8') : Color3.FromHexString('#ffffff');
-    hemi.groundColor = desert ? Color3.FromHexString('#8a6038') : Color3.FromHexString('#7d8798');
-    this.sun = new DirectionalLight('sun', new Vector3(-0.45, -1, 0.35), scene);
-    this.sun.intensity = desert ? 1.15 : 1.1;
-    this.sun.diffuse = desert ? Color3.FromHexString('#ffe2b0') : Color3.FromHexString('#fff4e0');
-
-    this.track = buildTrack(scene, this.path, q.decorDensity);
+    const atmo = setupAtmosphere(scene, this.path, q);
+    const night = atmo.night;
+    this.night = night;
+    this.sun = atmo.sun;
+    this.track = buildTrack(scene, this.path, q.decorDensity, { night });
     this.setLoading(0.5, 'Préparation des véhicules…');
     await nextFrame();
 
@@ -207,16 +197,18 @@ export class RaceSession {
       this.sun.shadowMaxZ = 200;
       for (const r of this.track.shadowReceivers) r.receiveShadows = true;
     }
-    if (q.glow) {
-      const glow = new GlowLayer('glow', scene, { mainTextureRatio: 0.35, blurKernelSize: 24 });
-      glow.intensity = 0.55;
+    if (q.glow || (night && q.postFx !== 'none')) {
+      const glow = new GlowLayer('glow', scene, { mainTextureRatio: q.glow ? 0.35 : 0.25, blurKernelSize: night ? 32 : 24 });
+      glow.intensity = night ? 0.8 : 0.55;
+      // Facades carry lit windows in their emissive texture: they must not bloom as a whole.
+      for (const m of scene.meshes) if (/^city-|^lightPool|^sideStreets|^road|^ground/.test(m.name)) glow.addExcludedMesh(m as import('@babylonjs/core/Meshes/mesh').Mesh);
     }
 
     this.effects = new Effects(scene, q.particleScale, desert);
     this.camera = new DynamicRaceCamera(scene, this.path, q.viewDistance);
+    setupPostFx(scene, this.camera.camera, q, night ? { exposure: 1.0, contrast: 1.2, bloomThreshold: 0.85, bloomWeight: 0.35, vignette: 2.2 } : { exposure: 1.08, contrast: 1.15, vignette: 1.4 });
 
     AudioEngine.ensure();
-    applyEnvironment(scene, desert ? 'desert' : 'city-day', desert ? 0.9 : 1);
     await prepareVehicles(scene, this.config.grid.map((g) => g.vehicle));
     for (const entry of this.config.grid) {
       const isLocal = entry.id === this.config.localId;
@@ -226,6 +218,14 @@ export class RaceSession {
       const tuning = tunedVehicle(entry.vehicle, entry.upgrades);
       const simulated = isLocal || this.config.mode === 'offline';
       const emitters = this.effects.attachVehicle(model, isLocal);
+      if (isLocal && this.night && q.name !== 'eco') {
+        // One dynamic light only: the player's headlights at night.
+        const spot = new SpotLight('headlight', new Vector3(0, 1.1, 1.8), new Vector3(0, -0.18, 1), 0.9, 6, scene);
+        spot.parent = model.chassis;
+        spot.diffuse = Color3.FromHexString('#fff2d6');
+        spot.intensity = 3.2;
+        spot.range = 70;
+      }
       if (simulated) {
         const slot = gridSlot(this.path, entry.slot);
         const vehicle = new ArcadeVehicle(this.path, tuning, slot.s, slot.lateral);

@@ -1,17 +1,16 @@
 import { Scene } from '@babylonjs/core/scene';
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Camera } from '@babylonjs/core/Cameras/camera';
-import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
-import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
-import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { getTrackPath, type TrackPath, type VehicleId } from '@race-rush/shared';
 import type { EngineHost } from '../engine/EngineHost';
 import { buildTrack, type BuiltTrack } from '../scene/TrackBuilder';
 import { createVehicleModel, type VehicleModel } from '../scene/VehicleFactory';
 import { loadFonts } from '../race/RaceSession';
 import { prepareVehicles } from '../assets/VehicleAssets';
-import { applyEnvironment } from '../assets/environment';
+import { setupAtmosphere, type Atmosphere } from '../render/atmosphere';
+import { setupPostFx } from '../render/postFx';
 
 export interface ShowcaseCar {
   key: string;
@@ -39,6 +38,7 @@ export class ShowcaseScene {
   private time = 0;
   private shiftX = 0.12;
   private disposed = false;
+  private readonly atmo: Atmosphere;
 
   constructor(
     private readonly host: EngineHost,
@@ -50,21 +50,7 @@ export class ShowcaseScene {
     this.scene = scene;
     scene.skipPointerMovePicking = true;
     scene.constantlyUpdateMeshUnderPointer = false;
-    const pal = this.path.def.palette;
-    const desert = this.path.def.theme === 'desert';
-    scene.clearColor = Color4.FromHexString(`${pal.fog}ff`);
-    scene.fogMode = Scene.FOGMODE_EXP2;
-    scene.fogDensity = host.quality.fogDensity * 0.6;
-    scene.fogColor = Color3.FromHexString(pal.fog);
-    scene.ambientColor = new Color3(0.2, 0.22, 0.3);
-
-    const hemi = new HemisphericLight('scHemi', new Vector3(0.2, 1, 0.1), scene);
-    hemi.intensity = 0.95;
-    hemi.diffuse = Color3.FromHexString(desert ? '#fff1d8' : '#ffffff');
-    hemi.groundColor = Color3.FromHexString(desert ? '#8a6038' : '#7d8798');
-    const sun = new DirectionalLight('scSun', new Vector3(-0.45, -1, 0.35), scene);
-    sun.intensity = 1.1;
-    sun.diffuse = Color3.FromHexString(desert ? '#ffe2b0' : '#fff4e0');
+    this.atmo = setupAtmosphere(scene, this.path, host.quality);
 
     const spot = this.path.sampleAt(SPOT_S);
     // Camera ahead of the cars, looking back down the start straight (gantry + city behind them).
@@ -86,8 +72,8 @@ export class ShowcaseScene {
   async build(): Promise<void> {
     await loadFonts();
     if (this.disposed) return;
-    this.track = buildTrack(this.scene, this.path, this.host.quality.decorDensity * 0.8);
-    applyEnvironment(this.scene, this.path.def.theme === 'desert' ? 'desert' : 'city-day');
+    this.track = buildTrack(this.scene, this.path, this.host.quality.decorDensity * 0.8, { night: this.atmo.night });
+    setupPostFx(this.scene, this.camera, this.host.quality, this.atmo.night ? { exposure: 1.0, contrast: 1.2, bloomThreshold: 0.85, bloomWeight: 0.35 } : {});
     await prepareVehicles(this.scene, [...this.cars.values()].map((c) => c.vehicle).concat(['sport']));
     if (this.disposed) return;
     // Rebuild parked vehicles with the detailed GLB models now available.

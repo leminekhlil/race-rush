@@ -9,6 +9,7 @@ const page = await browser.newPage({ viewport: { width: +w, height: +h } });
 const logs = [];
 page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
+if (process.env.NIGHT) await page.addInitScript(() => { try { const k = 'raceRush.settings.v1'; const s = JSON.parse(localStorage.getItem(k) || '{}'); s.timeOfDay = 'night'; localStorage.setItem(k, JSON.stringify(s)); } catch {} });
 await page.goto(url);
 const start = Date.now();
 let i = 0;

@@ -24,7 +24,8 @@ export const setupPostFx = (scene: Scene, camera: Camera, q: QualityParams, o: P
   ip.exposure = o.exposure ?? 1.1;
   ip.contrast = o.contrast ?? 1.15;
   if (q.postFx === 'none') return null;
-  const p = new DefaultRenderingPipeline(`postfx-${camera.name}`, true, scene, [camera]);
+  // LDR targets: half-float buffers turned some additive particles into NaN (black squares) on SwiftShader / mobile.
+  const p = new DefaultRenderingPipeline(`postfx-${camera.name}`, false, scene, [camera]);
   p.imageProcessingEnabled = true;
   p.imageProcessing.toneMappingEnabled = true;
   p.imageProcessing.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
