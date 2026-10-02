@@ -10,6 +10,8 @@ import type { EngineHost } from '../engine/EngineHost';
 import { buildTrack, type BuiltTrack } from '../scene/TrackBuilder';
 import { createVehicleModel, type VehicleModel } from '../scene/VehicleFactory';
 import { loadFonts } from '../race/RaceSession';
+import { prepareVehicles } from '../assets/VehicleAssets';
+import { applyEnvironment } from '../assets/environment';
 
 export interface ShowcaseCar {
   key: string;
@@ -85,6 +87,14 @@ export class ShowcaseScene {
     await loadFonts();
     if (this.disposed) return;
     this.track = buildTrack(this.scene, this.path, this.host.quality.decorDensity * 0.8);
+    applyEnvironment(this.scene, this.path.def.theme === 'desert' ? 'desert' : 'city-day');
+    await prepareVehicles(this.scene, [...this.cars.values()].map((c) => c.vehicle).concat(['sport']));
+    if (this.disposed) return;
+    // Rebuild parked vehicles with the detailed GLB models now available.
+    const list = this.order.map((key) => ({ key, vehicle: this.cars.get(key)!.vehicle, color: this.cars.get(key)!.color }));
+    for (const [, car] of this.cars) car.model.dispose();
+    this.cars.clear();
+    this.setCars(list);
     // Start lights off-green while idling in menus.
     this.track.startLights.forEach((m) => (m.emissiveColor = Color3.FromHexString('#2bff6a')));
   }

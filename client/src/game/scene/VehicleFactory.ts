@@ -7,7 +7,9 @@ import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { CreateCylinder } from '@babylonjs/core/Meshes/Builders/cylinderBuilder';
 import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
+import type { AssetContainer } from '@babylonjs/core/assetContainer';
 import { paintById, type VehicleId } from '@race-rush/shared';
+import { instantiateGlbVehicle, readyContainer } from '../assets/VehicleAssets';
 
 export interface WheelRig {
   pivot: TransformNode;
@@ -372,7 +374,65 @@ const buildWheel = (scene: Scene, r: number, w: number, mat: StandardMaterial, n
   return wheel;
 };
 
+/** Soft dark blob under the vehicle (cheap fake AO, works on every profile). */
+const shadowBlob = (scene: Scene, id: VehicleId, name: string, parent: TransformNode) => {
+  const blob = CreateSphere(`veh-${name}-shadow`, { diameter: 1, segments: 6 }, scene);
+  blob.scaling.set(id === 'moto' ? 1.2 : id === 'monster' ? 3.6 : 2.4, 0.02, id === 'moto' ? 2.6 : id === 'monster' ? 5 : 4.6);
+  blob.position.y = 0.04;
+  const blobMat = new StandardMaterial(`veh-${name}-shadowMat`, scene);
+  blobMat.diffuseColor = Color3.Black();
+  blobMat.specularColor = Color3.Black();
+  blobMat.disableLighting = true;
+  blobMat.alpha = 0.45;
+  blob.material = blobMat;
+  blob.parent = parent;
+  blob.isPickable = false;
+  return { blob, blobMat };
+};
+
+/** GLB-based vehicle (see game/assets/VehicleAssets): same rig contract as the procedural models. */
+const createGlbModel = (scene: Scene, id: VehicleId, paintId: string, name: string, container: AssetContainer): VehicleModel => {
+  const bp = BLUEPRINTS[id];
+  const root = new TransformNode(`veh-${name}`, scene);
+  const chassis = new TransformNode(`veh-${name}-chassis`, scene);
+  chassis.parent = root;
+  const parts = instantiateGlbVehicle(scene, container, chassis, `veh-${name}`, paintId);
+  const wheels: WheelRig[] = [];
+  for (const w of parts.wheels) {
+    const pivot = new TransformNode(`veh-${name}-wpivot`, scene);
+    pivot.parent = root;
+    pivot.position.set(w.position.x, w.radius, w.position.z);
+    const spin = new TransformNode(`veh-${name}-wspin`, scene);
+    spin.parent = pivot;
+    w.node.setParent(spin);
+    w.node.position.set(0, 0, 0);
+    wheels.push({ pivot, spin, front: w.front, radius: w.radius, restY: pivot.position.y });
+  }
+  const { blob, blobMat } = shadowBlob(scene, id, name, root);
+  const rear = parts.wheels.filter((w) => !w.front);
+  return {
+    id,
+    root,
+    chassis,
+    wheels,
+    exhausts: bp.exhausts,
+    rearContacts: rear.map((w) => new Vector3(w.position.x, 0.15, w.position.z)),
+    wheelsOnChassis: false,
+    bodyRestY: 0,
+    meshes: [...parts.meshes, blob],
+    setPaint: parts.setPaint,
+    setBrakeLights: parts.setBrakeLights,
+    dispose() {
+      parts.dispose();
+      root.dispose(false, false);
+      blobMat.dispose();
+    },
+  };
+};
+
 export const createVehicleModel = (scene: Scene, id: VehicleId, paintId: string, name: string = id): VehicleModel => {
+  const container = readyContainer(scene, id);
+  if (container) return createGlbModel(scene, id, paintId, name, container);
   const bp = BLUEPRINTS[id];
   const shared = materialsFor(scene);
   const root = new TransformNode(`veh-${name}`, scene);
@@ -420,18 +480,7 @@ export const createVehicleModel = (scene: Scene, id: VehicleId, paintId: string,
     wheels.push({ pivot, spin, front: w.front, radius: w.r, restY: pivot.position.y });
   }
 
-  // Shadow blob under the vehicle (cheap fake AO, works on ECO).
-  const blob = CreateSphere(`veh-${name}-shadow`, { diameter: 1, segments: 6 }, scene);
-  blob.scaling.set(id === 'moto' ? 1.2 : id === 'monster' ? 3.6 : 2.4, 0.02, id === 'moto' ? 2.6 : id === 'monster' ? 5 : 4.6);
-  blob.position.y = 0.04;
-  const blobMat = new StandardMaterial(`veh-${name}-shadowMat`, scene);
-  blobMat.diffuseColor = Color3.Black();
-  blobMat.specularColor = Color3.Black();
-  blobMat.disableLighting = true;
-  blobMat.alpha = 0.45;
-  blob.material = blobMat;
-  blob.parent = root;
-  blob.isPickable = false;
+  const { blob, blobMat } = shadowBlob(scene, id, name, root);
   meshes.push(blob);
 
   const rearWheels = bp.wheels.filter((w) => !w.front);

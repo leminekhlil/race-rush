@@ -16,6 +16,8 @@ import '@babylonjs/core/Particles/particleSystemComponent';
 import type { VehicleId } from '@race-rush/shared';
 import type { EngineHost } from '../engine/EngineHost';
 import { createVehicleModel, type VehicleModel } from '../scene/VehicleFactory';
+import { prepareVehicles } from '../assets/VehicleAssets';
+import { applyEnvironment } from '../assets/environment';
 import { crownBannerTexture } from '../scene/textures';
 import { cityViewTexture } from '../garage/workshopTextures';
 import { confettiTexture, namePlateTexture, podiumFaceTexture, PODIUM_COLORS } from './podiumTextures';
@@ -71,6 +73,15 @@ export class PodiumScene {
 
     this.buildSet();
     this.buildPodium(entries);
+    applyEnvironment(scene, 'city-day', 1);
+    // Swap in the detailed GLB vehicles once loaded.
+    void prepareVehicles(scene, entries.map((e) => e.vehicle)).then(() => {
+      if (scene.isDisposed) return;
+      for (const m of this.models) m.dispose();
+      this.models.length = 0;
+      for (const n of scene.meshes.filter((m) => m.name.startsWith('pPlate'))) n.dispose();
+      this.buildPodium(entries, true);
+    });
     this.buildConfetti(lowQuality);
 
     for (const m of scene.meshes) m.isPickable = false;
@@ -125,11 +136,21 @@ export class PodiumScene {
     }
   }
 
-  private buildPodium(entries: PodiumEntry[]): void {
+  private buildPodium(entries: PodiumEntry[], vehiclesOnly = false): void {
     const s = this.scene;
     const body = this.mat('pBody', '#252b3b');
     for (const b of BLOCKS) {
       const c = PODIUM_COLORS[b.place - 1];
+      if (!vehiclesOnly) this.buildBlock(b, c, body);
+      const e = entries[b.place - 1];
+      if (!e) continue;
+      this.placeVehicle(b, e);
+    }
+  }
+
+  private buildBlock(b: (typeof BLOCKS)[number], c: (typeof PODIUM_COLORS)[number], body: StandardMaterial): void {
+    const s = this.scene;
+    {
       const block = CreateBox(`pBlock${b.place}`, { width: b.w, height: b.h, depth: DEPTH }, s);
       block.position.set(b.x, b.h / 2, 0);
       block.material = body;
@@ -141,9 +162,12 @@ export class PodiumScene {
       const face = CreatePlane(`pFace${b.place}`, { width: b.w, height: b.h }, s);
       face.position.set(b.x, b.h / 2, -DEPTH / 2 - 0.01);
       face.material = this.mat(`pFaceMat${b.place}`, '#ffffff', podiumFaceTexture(s, b.place), true);
+    }
+  }
 
-      const e = entries[b.place - 1];
-      if (!e) continue;
+  private placeVehicle(b: (typeof BLOCKS)[number], e: PodiumEntry): void {
+    const s = this.scene;
+    {
       const model = createVehicleModel(s, e.vehicle, e.color, `podium-${b.place}`);
       model.meshes.filter((m) => m.name.endsWith('-shadow')).forEach((m) => m.setEnabled(false));
       model.root.position.set(b.x, b.h + 0.12, 0.2);

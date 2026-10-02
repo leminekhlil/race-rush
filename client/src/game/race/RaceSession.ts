@@ -43,6 +43,8 @@ import {
 import type { EngineHost } from '../engine/EngineHost';
 import { buildTrack, type BuiltTrack } from '../scene/TrackBuilder';
 import { createVehicleModel, type VehicleModel } from '../scene/VehicleFactory';
+import { prepareVehicles } from '../assets/VehicleAssets';
+import { applyEnvironment } from '../assets/environment';
 import { nameTagTexture } from '../scene/textures';
 import { DynamicRaceCamera } from '../camera/DynamicRaceCamera';
 import { InputManager } from '../input/InputManager';
@@ -214,6 +216,8 @@ export class RaceSession {
     this.camera = new DynamicRaceCamera(scene, this.path, q.viewDistance);
 
     AudioEngine.ensure();
+    applyEnvironment(scene, desert ? 'desert' : 'city-day', desert ? 0.9 : 1);
+    await prepareVehicles(scene, this.config.grid.map((g) => g.vehicle));
     for (const entry of this.config.grid) {
       const isLocal = entry.id === this.config.localId;
       const model = createVehicleModel(scene, entry.vehicle, entry.color, `${entry.slot}`);

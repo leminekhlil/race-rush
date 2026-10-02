@@ -10,10 +10,12 @@ import { Constants } from '@babylonjs/core/Engines/constants';
 import type { VehicleId } from '@race-rush/shared';
 import { getEngineHost } from '../engine/EngineHost';
 import { createVehicleModel } from '../scene/VehicleFactory';
+import { prepareVehicles } from '../assets/VehicleAssets';
+import { applyEnvironment } from '../assets/environment';
 
 /** Camera framing per vehicle (radius, target height). */
 const FRAMING: Record<VehicleId, { radius: number; y: number }> = {
-  sport: { radius: 5.7, y: 0.55 },
+  sport: { radius: 7.4, y: 0.55 },
   moto: { radius: 3.5, y: 0.85 },
   buggy: { radius: 6.9, y: 1.1 },
   monster: { radius: 7.4, y: 1.55 },
@@ -40,6 +42,7 @@ const ensureScene = () => {
   camera = new ArcRotateCamera('thumbCam', Math.PI / 2 + 0.7, 1.2, 6, Vector3.Zero(), scene);
   camera.fov = 0.55;
   camera.minZ = 0.1;
+  applyEnvironment(scene, 'studio', 1.1);
   return scene;
 };
 
@@ -77,6 +80,7 @@ export const vehicleThumbnail = (vehicle: VehicleId, color: string, width = 400,
   if (hit) return hit;
   const job = queue.then(async () => {
     const s = ensureScene();
+    await prepareVehicles(s, [vehicle]);
     const model = createVehicleModel(s, vehicle, color, `thumb-${vehicle}`);
     model.meshes.filter((m) => m.name.endsWith('-shadow')).forEach((m) => m.setEnabled(false));
     const f = FRAMING[vehicle];

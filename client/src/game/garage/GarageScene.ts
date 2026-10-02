@@ -14,6 +14,8 @@ import type { VehicleId } from '@race-rush/shared';
 import type { EngineHost } from '../engine/EngineHost';
 import { createVehicleModel, type VehicleModel } from '../scene/VehicleFactory';
 import { buildWorkshop } from './workshop';
+import { hasGlb, prepareVehicles, readyContainer } from '../assets/VehicleAssets';
+import { applyEnvironment } from '../assets/environment';
 
 /**
  * Showroom: vehicle on a rotating turntable, studio lights, user orbit (drag / pinch / wheel).
@@ -67,6 +69,7 @@ export class GarageScene {
 
     // Arcade workshop (garage reference); the turntable top carries the vehicle.
     this.turntable = buildWorkshop(scene);
+    applyEnvironment(scene, 'studio', 1);
     // Start on a 3/4 front view (vehicles face +z, the camera looks from -z).
     this.turntable.rotation.y = Math.PI - 0.75;
 
@@ -126,10 +129,22 @@ export class GarageScene {
     }
   }
 
+  private color = 'red';
+
   setVehicle(id: VehicleId, color: string): void {
+    this.color = color;
     if (this.vehicleId === id && this.model) {
       this.model.setPaint(color);
       return;
+    }
+    // GLB vehicles: load first, then rebuild with the detailed model (procedural stand-in meanwhile).
+    if (hasGlb(id) && !readyContainer(this.scene, id)) {
+      void prepareVehicles(this.scene, [id]).then(() => {
+        if (this.vehicleId === id && !this.scene.isDisposed) {
+          this.vehicleId = null;
+          this.setVehicle(id, this.color);
+        }
+      });
     }
     this.model?.dispose();
     this.vehicleId = id;
