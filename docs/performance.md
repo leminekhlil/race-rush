@@ -22,16 +22,18 @@ Headless Chromium with **SwiftShader (CPU rasterization, 4 vCPU)** — absolute 
 
 | Profile | Track | Draw calls | Triangles drawn | JS heap | FPS (SwiftShader) |
 |---|---|---|---|---|---|
-| ECO | City | 69 | 34 k | 59 MB | 16 |
-| ECO | Desert | 59 | 32 k | 64 MB | 20 |
-| STANDARD | City | 51 | 38 k | 81 MB | 6 |
-| STANDARD | Desert | 57 | 39 k | 84 MB | 9 |
-| HIGH | City | 193 | 87 k | 101 MB | 4 |
-| HIGH | Desert | 200 | 95 k | 95 MB | 5 |
+| ECO | City | 59 | 40 k | 82 MB | 22 |
+| ECO | Desert | 77 | 39 k | 63 MB | 19 |
+| STANDARD | City | 61 | 47 k | 122 MB | 9 |
+| STANDARD | Desert | 79 | 46 k | 111 MB | 12 |
+| HIGH | City | 171 | 102 k | 116 MB | 5 |
+| HIGH | Desert | 184 | 104 k | 116 MB | 6 |
+
+Measured after the map landmarks (tunnels, bridges, harbour…): they add ≈ 10 draw calls thanks to merged vertex-coloured geometry and thin instances.
 
 - Simulation CPU cost: **55 µs per 60 Hz step for 5 vehicles** (≈ 0.3 % of a frame) — `npx tsx` micro-benchmark.
 - Bundle: 2.25 MB JS (≈ 540 KB gzip), Babylon chunk 443 KB gzip; Havok wasm 2 MB lazy-loaded only on STANDARD/HIGH.
-- 60 – 70 draw calls and < 40 k triangles on ECO/STANDARD are well within mid-range mobile GPU budgets; HIGH's extra cost is the shadow pass + glow layer (desktop profile).
+- 60 – 80 draw calls and < 50 k triangles on ECO/STANDARD are well within mid-range mobile GPU budgets; HIGH's extra cost is the shadow pass + glow layer (desktop profile).
 
 Reproduce: `node e2e/perf.mjs` (dev server running).
 

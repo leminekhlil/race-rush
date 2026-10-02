@@ -26,6 +26,8 @@ The domain package has **no dependency** on Babylon, React, the DOM or Node: the
 | Lobby / Multiplayer / Networking | `realtime/src/*`, `client/src/net/*`, `shared/src/protocol.ts` |
 | Player / Progression / Garage / Customization | `backend/app/Services/*`, `backend/app/Http/Controllers/*`, `client/src/app/screens/GarageScreen.tsx`, `client/src/game/garage/GarageScene.ts` + `workshop.ts` (showroom), `Thumbnails.ts` (off-screen 3D thumbnails) |
 | Results | `client/src/game/results/PodiumScene.ts` (3D podium, confetti), `client/src/app/screens/ResultsScreen.tsx` |
+| Menus backdrop | `client/src/game/street/ShowcaseScene.ts` (real circuit around the start line with parked vehicles: home, play, lobby), managed with the workshop and podium scenes by `client/src/app/backdrop.ts` (one scene alive, off-screen build then swap) |
+| Map landmarks | `client/src/game/scene/landmarks.ts` (per-map signature structures, merged vertex-coloured geometry, reserved zones for generic decor) |
 | Performance | `client/src/game/quality/QualityManager.ts`, `client/src/game/engine/EngineHost.ts` |
 
 ## Runtime flow (online race)

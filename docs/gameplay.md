@@ -46,7 +46,7 @@ Vehicle selection (class cards + colour) → grid **behind** the start line (car
 
 ## Tracks
 
-`TrackDefinition` = closed control points (+ elevation, width), ramps, checkpoints, palette, decor seed. City (1651 m, elevation + 2 kickers, 8 checkpoints) is complete; Desert (1379 m, dunes, canyon walls, rocks, cacti, tumbleweeds) is a playable preview. Adding a track = adding a definition.
+`TrackDefinition` = closed control points (+ elevation, width), ramps, checkpoints, palette, decor seed. City (1651 m, elevation + 2 kickers, 8 checkpoints) is complete; Desert (1379 m, dunes, canyon walls, rocks, cacti, tumbleweeds, landmarks) is playable. Landmarks never enter the road corridor: they are outside the barriers or high above the road, so the simulation and anti-cheat are unaffected. Adding a track = adding a definition.
 
 ## Visual references (`docs/references/`)
 
@@ -54,6 +54,11 @@ The five reference boards are functional/visual targets, not pixel-perfect specs
 
 | Reference | Implementation |
 |---|---|
+| 00 Menu principal | `HomeScreen.tsx` (SVG logo `components/Logo.tsx`, JOUER / CRÉER UNE PARTIE / REJOINDRE UNE PARTIE, editable pilot name, settings, stats), `street/ShowcaseScene.ts` (circuit backdrop, city or desert by selected track) |
+| 02 Lobby multijoueur | `LobbyScreen.tsx` (player cards, invite slot, code + copy, map / laps / mode / bots, ready count, LANCER LA COURSE) on the showcase backdrop with every player's vehicle on the grid |
+| 07 Map Ville | `scene/landmarks.ts` (tunnel, elevated highway with traffic and green sign, harbour, residential street with power lines, parked cars) + palms, pastel towers, crown banners |
+| 08 Map Désert | `scene/landmarks.ts` (rock arch, trestle bridge, water towers, gas station, windmills, canyon tunnel, fences, bushes) + mesas, cacti, dunes |
+| 09 Buggy | `VehicleFactory.ts` buggy blueprint (bull bar, round headlights, 3 roof lamps, hood stripe, roof panel, dark rims) |
 | 01 Garage | `GarageScreen.tsx` (top nav, MES VÉHICULES, stats, Couleurs, Améliorations; locked Motifs/Stickers/Effets/Roues), `garage/workshop.ts` (3D workshop + hazard turntable) |
 | 03 Sélection du véhicule | `VehicleSelectScreen.tsx` + `garage/Thumbnails.ts` (3D thumbnails rendered off-screen) |
 | 04 HUD en course | `RaceHud.tsx` (position + standings with "Toi", lap, stopwatch, minimap with flag, segmented boost), `TouchControls.tsx` (round arrows, BOOST lightning, brake-disc FREIN/DRIFT) |
