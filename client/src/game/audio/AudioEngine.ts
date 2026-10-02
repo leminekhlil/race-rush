@@ -1,5 +1,6 @@
 import { clamp, type VehicleTuning } from '@race-rush/shared';
 import { settingsStore } from '../../state/settings';
+import { assetUrl } from '../assets/assetUrl';
 
 /**
  * Web Audio mixer: master → (sfx bus, music bus, voice bus) → compressor.
@@ -78,7 +79,7 @@ class AudioEngineImpl {
     const load = async (name: SampleName) => {
       for (const ext of ['ogg', 'm4a']) {
         try {
-          const r = await fetch(new URL(`audio/${name}.${ext}`, document.baseURI));
+          const r = await fetch(assetUrl(`audio/${name}.${ext}`));
           if (!r.ok) continue;
           const buf = await ctx.decodeAudioData(await r.arrayBuffer());
           this.buffers.set(name, buf);

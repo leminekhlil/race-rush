@@ -7,6 +7,7 @@ import { PBRMaterial } from '@babylonjs/core/Materials/PBR/pbrMaterial';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { paintById, type VehicleId } from '@race-rush/shared';
+import { assetUrl } from './assetUrl';
 
 /**
  * GLB vehicles (optimised offline, see docs/CREDITS.md). Bytes are fetched once and cached by the service worker;
@@ -23,7 +24,7 @@ const ready = new WeakMap<Scene, Map<VehicleId, AssetContainer>>();
 const fetchBytes = (url: string) => {
   let p = bytes.get(url);
   if (!p) {
-    p = fetch(new URL(url, document.baseURI)).then((r) => {
+    p = fetch(assetUrl(url)).then((r) => {
       if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
       return r.arrayBuffer();
     });

@@ -21,7 +21,8 @@
     "e2e:mvp": "node e2e/mvp-loop.mjs",
     "e2e:multiplayer": "node e2e/multiplayer-ui.mjs",
     "e2e:ui": "node e2e/ui-shots.mjs",
-    "perf": "node e2e/perf.mjs"
+    "perf": "node e2e/perf.mjs",
+    "build:portable": "VITE_PORTABLE_ASSETS=1 npm run build -w client -- --outDir ../dist-portable && node scripts/portable-assets.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
