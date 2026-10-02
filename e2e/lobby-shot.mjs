@@ -1,0 +1,37 @@
+// Lobby screenshots: host creates from the home menu, a guest joins with the code from the home "Rejoindre" modal.
+import { chromium } from '@playwright/test';
+const OUT = process.env.SHOTS ?? '/tmp/claude-0/shots';
+const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const errors = [];
+const mk = async (label, viewport, mobile = false) => {
+  const ctx = await browser.newContext({ viewport, isMobile: mobile, hasTouch: mobile });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(`${label} pageerror: ${e.message}`));
+  page.on('console', (m) => m.type() === 'error' && !/vibrate/.test(m.text()) && errors.push(`${label}: ${m.text()}`));
+  await page.goto(BASE);
+  await page.getByTestId('name-input').waitFor({ timeout: 30000 });
+  await page.getByTestId('name-input').fill(label);
+  await page.getByTestId('start-button').click();
+  await page.getByTestId('player-name').waitFor();
+  return page;
+};
+const host = await mk('Lemine', { width: 1280, height: 720 });
+await host.getByTestId('home-create').click();
+await host.getByTestId('lobby-screen').waitFor({ timeout: 15000 });
+const code = (await host.getByTestId('lobby-code').innerText()).trim();
+const guest = await mk('Minato', { width: 844, height: 390 }, true);
+await guest.getByTestId('home-join').click();
+await guest.getByTestId('home-join-code').fill(code);
+await guest.getByTestId('home-join-submit').click();
+await guest.getByTestId('lobby-screen').waitFor({ timeout: 15000 });
+await guest.getByTestId('lobby-vehicle-buggy').click();
+await guest.getByTestId('ready-button').click();
+await host.waitForTimeout(6000);
+await host.screenshot({ path: `${OUT}/lobby-host.png` });
+await guest.screenshot({ path: `${OUT}/lobby-guest.png` });
+await host.setViewportSize({ width: 390, height: 844 });
+await host.waitForTimeout(2500);
+await host.screenshot({ path: `${OUT}/lobby-portrait.png` });
+console.log('✓ code', code, 'ERRORS:', errors.join('\n') || 'none');
+await browser.close();

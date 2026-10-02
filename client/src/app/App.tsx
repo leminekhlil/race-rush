@@ -1,5 +1,5 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
-import { formatRaceTime, isVehicleId, NO_UPGRADES, TRACKS } from '@race-rush/shared';
+import { formatRaceTime, isVehicleId, NO_UPGRADES, TRACKS, type VehicleId } from '@race-rush/shared';
 import { useStore } from '../state/store';
 import { appStore } from '../state/appStore';
 import { settingsStore } from '../state/settings';
@@ -14,7 +14,7 @@ import { ResultsScreen } from './screens/ResultsScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { NoticeHost } from './components/ui';
 import { actions, currentSelection, getRealtime } from './actions';
-import { hideBackdrop, hidePodium, showBackdrop, showPodium } from './backdrop';
+import { hideBackdrop, showBackdrop, showPodium, showShowcase } from './backdrop';
 import { AudioEngine } from '../game/audio/AudioEngine';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -41,6 +41,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     );
   }
 }
+
+/** Menu line-up (menu reference): the player's vehicle in front, the other classes behind in their reference colours. */
+const MENU_EXTRAS: { vehicle: VehicleId; color: string }[] = [
+  { vehicle: 'buggy', color: 'yellow' },
+  { vehicle: 'monster', color: 'violet' },
+  { vehicle: 'moto', color: 'red' },
+  { vehicle: 'sport', color: 'red' },
+];
+const menuCars = (vehicle: VehicleId, color: string) => [
+  { key: 'hero', vehicle, color },
+  ...MENU_EXTRAS.filter((e) => e.vehicle !== vehicle)
+    .slice(0, 3)
+    .map((e) => ({ key: `extra-${e.vehicle}`, ...e })),
+];
 
 const BootScreen = () => (
   <div className="flex h-full flex-col items-center justify-center bg-night-950" data-testid="boot-screen">
@@ -87,17 +101,26 @@ export const App = () => {
     window.addEventListener('keydown', unlock, { once: true });
   }, []);
 
-  // 3D backdrop lifecycle: showroom for menus, released during races.
+  // 3D backdrop lifecycle: circuit showcase (home/play/lobby), workshop (garage/select), podium (results).
+  const trackId = useStore(appStore, (s) => s.trackId);
+  const lobby = useStore(appStore, (s) => s.lobby);
   useEffect(() => {
     if (screen === 'results') return; // podium effect below
-    hidePodium();
     if (screen === 'race' || screen === 'boot') {
       hideBackdrop();
       return;
     }
     const sel = currentSelection();
-    showBackdrop(screen === 'garage', sel.vehicle, sel.color);
-  }, [screen, profile]);
+    if (screen === 'garage' || screen === 'select') {
+      showBackdrop(screen === 'garage', sel.vehicle, sel.color);
+      return;
+    }
+    if (screen === 'lobby' && lobby) {
+      showShowcase(lobby.trackId, 'lobby', -0.12, lobby.players.map((p) => ({ key: p.id, vehicle: p.vehicle, color: p.color })));
+      return;
+    }
+    showShowcase(trackId, 'menu', screen === 'home' ? 0.14 : 0, menuCars(sel.vehicle, sel.color));
+  }, [screen, profile, trackId, lobby]);
 
   // Results: 3D podium with the top three.
   useEffect(() => {

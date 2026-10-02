@@ -201,3 +201,69 @@ export const PlusIcon = ({ className }: P) => (
     <path d="M12 5v14M5 12h14" strokeWidth={3.2} />
   </Svg>
 );
+
+export const PlayIcon = ({ className }: P) => (
+  <Svg className={className} fill>
+    <path d="M7 4.5v15l12.5-7.5z" />
+  </Svg>
+);
+
+export const UsersIcon = ({ className }: P) => (
+  <Svg className={className} fill>
+    <circle cx="9" cy="8" r="3.6" />
+    <circle cx="17" cy="9" r="2.8" />
+    <path d="M2.5 19.5a6.5 6.5 0 0 1 13 0zM15.5 19.5a6.4 6.4 0 0 0-1.6-4.3 5 5 0 0 1 7.6 4.3z" />
+  </Svg>
+);
+
+export const LinkIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2" strokeWidth={2.6} />
+    <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2" strokeWidth={2.6} />
+  </Svg>
+);
+
+export const PencilIcon = ({ className }: P) => (
+  <Svg className={className} fill>
+    <path d="m15.2 4.3 4.5 4.5L8.5 20H4v-4.5zM16.6 2.9a1.5 1.5 0 0 1 2.1 0l2.4 2.4a1.5 1.5 0 0 1 0 2.1l-.8.8-4.5-4.5z" />
+  </Svg>
+);
+
+export const GearIcon = ({ className }: P) => (
+  <Svg className={className} fill>
+    <path d="M10.3 2h3.4l.5 2.6 1.6.7 2.2-1.5 2.4 2.4-1.5 2.2.7 1.6 2.6.5v3.4l-2.6.5-.7 1.6 1.5 2.2-2.4 2.4-2.2-1.5-1.6.7-.5 2.6h-3.4l-.5-2.6-1.6-.7-2.2 1.5-2.4-2.4 1.5-2.2-.7-1.6L2 13.7v-3.4l2.6-.5.7-1.6-1.5-2.2 2.4-2.4 2.2 1.5 1.6-.7zM12 8.3a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4" />
+  </Svg>
+);
+
+export const StatsIcon = ({ className }: P) => (
+  <Svg className={className} fill>
+    <path d="M4 13h3.5v7H4zM10.25 4h3.5v16h-3.5zM16.5 9H20v11h-3.5z" />
+  </Svg>
+);
+
+export const CopyIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2.2" strokeWidth={2.4} />
+    <path d="M15.5 5.5V5A1.5 1.5 0 0 0 14 3.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h.5" strokeWidth={2.4} />
+  </Svg>
+);
+
+export const BackIcon = ({ className }: P) => (
+  <Svg className={className}>
+    <path d="M9 6 4 11l5 5" strokeWidth={2.8} />
+    <path d="M4.5 11H14a5.5 5.5 0 0 1 0 11h-2" strokeWidth={2.8} />
+  </Svg>
+);
+
+export const PersonIcon = ({ className }: P) => (
+  <Svg className={className} fill>
+    <circle cx="12" cy="8" r="4.2" />
+    <path d="M3.8 21a8.2 8.2 0 0 1 16.4 0z" />
+  </Svg>
+);
+
+export const CrownIcon = ({ className }: P) => (
+  <Svg className={className} fill>
+    <path d="M3 18.5 2 7.5l5.5 4.5L12 4.5l4.5 7.5L22 7.5l-1 11z" />
+  </Svg>
+);

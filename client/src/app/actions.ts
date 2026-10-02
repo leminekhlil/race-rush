@@ -110,6 +110,28 @@ export const actions = {
     }
   },
 
+  /** Renames the pilot (server-validated when online, local name offline). */
+  async rename(name: string): Promise<boolean> {
+    const clean = name.trim().replace(/[^\p{L}\p{N} _.-]/gu, '').slice(0, 16);
+    if (clean.length < 2) {
+      notify('Le pseudo doit contenir au moins 2 caractères.', 'error');
+      return false;
+    }
+    if (!appStore.get().profile) {
+      settingsStore.set({ playerName: clean });
+      return true;
+    }
+    try {
+      setProfile(await api.rename(clean));
+      settingsStore.set({ playerName: clean });
+      notify('Pseudo mis à jour.', 'good');
+      return true;
+    } catch (e) {
+      notify(errorText(e), 'error');
+      return false;
+    }
+  },
+
   async refreshProfile(): Promise<void> {
     if (!hasToken()) return;
     try {

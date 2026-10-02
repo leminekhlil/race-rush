@@ -24,7 +24,7 @@ const guest = await mk(`Guest${Date.now() % 1000}`, { viewport: { width: 740, he
 
 await host.getByTestId('create-lobby').click();
 await host.getByTestId('lobby-screen').waitFor({ timeout: 15000 });
-await host.getByLabel('Tours').selectOption('1');
+await host.getByTestId('lobby-laps-1').click();
 const code = (await host.getByTestId('lobby-code').innerText()).trim();
 console.log('✓ lobby created, code', code);
 

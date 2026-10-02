@@ -44,6 +44,7 @@ import {
 import { AudioEngine } from '../../game/audio/AudioEngine';
 import { useVehicleThumb } from '../../game/garage/Thumbnails';
 import { garageFraming, garagePreview } from '../backdrop';
+import { useViewport } from '../useViewport';
 
 /* ------------------------------------------------------------------ data */
 
@@ -67,16 +68,6 @@ const STAT_ROWS: { key: StatKey; label: string; icon: ReactNode; ring: string; b
 const STANDARD_PAINTS = PAINTS.filter((p) => !p.premium);
 
 /* ------------------------------------------------------------- helpers */
-
-const useViewport = () => {
-  const [vp, setVp] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
-  useEffect(() => {
-    const on = () => setVp({ w: window.innerWidth, h: window.innerHeight });
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return vp;
-};
 
 const Card = ({ children, className = '' }: { children: ReactNode; className?: string }) => (
   <section className={`pointer-events-auto rounded-2xl border border-white/12 bg-night-950/80 shadow-2xl backdrop-blur-md ${className}`}>{children}</section>
