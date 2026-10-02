@@ -46,7 +46,7 @@ cp "$ROOT/deploy/hostinger/env.production.example" "$STAGE/racerush-app/.env.exa
 printf 'Require all denied\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n' > "$STAGE/racerush-app/.htaccess"
 (cd "$STAGE/racerush-app" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --no-progress --quiet)
 # Vendor test suites / fixtures are never loaded in production (some ship sample keys): prune, then rebuild the classmap.
-find "$STAGE/racerush-app/vendor" -depth -type d \( -name tests -o -name Tests -o -name test_files -o -name .github -o -name fixtures -o -name Fixtures \) -prune -exec rm -rf {} +
+find "$STAGE/racerush-app/vendor" -depth -type d \( -name tests -o -name Tests -o -name test -o -name test_files -o -name .github -o -name fixtures -o -name Fixtures \) -prune -exec rm -rf {} +
 (cd "$STAGE/racerush-app" && COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-dev --optimize --no-interaction --quiet)
 rm -f "$STAGE/racerush-app/bootstrap/cache/config.php" "$STAGE/racerush-app/bootstrap/cache/routes-"*.php
 for d in storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache; do
