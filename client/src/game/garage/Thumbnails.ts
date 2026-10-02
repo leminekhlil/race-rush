@@ -16,9 +16,9 @@ import { applyEnvironment } from '../assets/environment';
 /** Camera framing per vehicle (radius, target height). */
 const FRAMING: Record<VehicleId, { radius: number; y: number }> = {
   sport: { radius: 7.4, y: 0.55 },
-  moto: { radius: 3.5, y: 0.85 },
+  moto: { radius: 4.2, y: 0.95 },
   buggy: { radius: 6.9, y: 1.1 },
-  monster: { radius: 7.4, y: 1.55 },
+  monster: { radius: 9.6, y: 1.75 },
 };
 
 let scene: Scene | null = null;

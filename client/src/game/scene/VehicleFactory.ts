@@ -10,6 +10,7 @@ import { CreateSphere } from '@babylonjs/core/Meshes/Builders/sphereBuilder';
 import type { AssetContainer } from '@babylonjs/core/assetContainer';
 import { paintById, type VehicleId } from '@race-rush/shared';
 import { instantiateGlbVehicle, readyContainer } from '../assets/VehicleAssets';
+import { createSmoothVehicle, hasSmoothBlueprint } from './vehicles/smoothVehicles';
 
 export interface WheelRig {
   pivot: TransformNode;
@@ -433,6 +434,7 @@ const createGlbModel = (scene: Scene, id: VehicleId, paintId: string, name: stri
 export const createVehicleModel = (scene: Scene, id: VehicleId, paintId: string, name: string = id): VehicleModel => {
   const container = readyContainer(scene, id);
   if (container) return createGlbModel(scene, id, paintId, name, container);
+  if (hasSmoothBlueprint(id)) return createSmoothVehicle(scene, id, paintId, name);
   const bp = BLUEPRINTS[id];
   const shared = materialsFor(scene);
   const root = new TransformNode(`veh-${name}`, scene);
