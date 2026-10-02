@@ -1,4 +1,4 @@
-import { openMicrophone } from './microphone';
+import { microphoneError, openMicrophone } from './microphone';
 import type { ClientMessage, IceServerDTO, LobbyDTO, VoiceSignal } from '@race-rush/shared';
 import { createStore } from '../../state/store';
 import { appStore } from '../../state/appStore';
@@ -159,34 +159,39 @@ class VoiceChatImpl {
     const v = voiceStore.get();
     if (v.mic === 'on' || v.mic === 'requesting') return;
     if (v.mic === 'muted') return this.toggleMute();
-    if (v.status === 'off' || v.status === 'unavailable') this.enable();
-    if (voiceStore.get().status === 'unavailable') return;
+    if (!voiceSupported()) { this.enable(); return; }
+    const joinVoice = v.status === 'off' || v.status === 'unavailable';
+    if (joinVoice && (!appStore.get().lobby || appStore.get().lobby?.solo || !this.sender?.id)) { this.enable(); return; }
     const gen = this.generation;
     voiceStore.set({ mic: 'requesting', error: null });
     let stream: MediaStream;
     try {
-      stream = await openMicrophone(navigator.mediaDevices);
+      // Invoke getUserMedia on the original tap, before audio setup or voice signalling.
+      const permission = openMicrophone(navigator.mediaDevices);
+      if (joinVoice) this.enable();
+      stream = await permission;
     } catch (err) {
       if (gen !== this.generation) return;
-      const name = (err as DOMException)?.name ?? '';
-      const [mic, msg]: [MicState, string] =
-        name === 'NotAllowedError' || name === 'SecurityError'
-          ? ['denied', 'Permission micro refusée. Autorise le micro dans les réglages du navigateur pour parler.']
-          : name === 'NotFoundError' || name === 'OverconstrainedError'
-            ? ['notfound', 'Aucun micro détecté sur cet appareil.']
-            : name === 'NotReadableError' || name === 'AbortError'
-              ? ['busy', 'Micro utilisé par une autre application.']
-              : ['error', 'Impossible d’ouvrir le micro.'];
+      const { name, message: msg } = microphoneError(err);
+      const mic: MicState = name === 'NotAllowedError' || name === 'SecurityError' ? 'denied'
+        : name === 'NotFoundError' || name === 'OverconstrainedError' ? 'notfound'
+        : name === 'NotReadableError' || name === 'AbortError' ? 'busy' : 'error';
       voiceStore.set({ mic, error: msg });
       return;
     }
     // Voice disabled / lobby left while the permission prompt was open: release immediately.
-    if (gen !== this.generation || voiceStore.get().status === 'off') {
+    if (gen !== this.generation || voiceStore.get().status === 'off' || voiceStore.get().status === 'unavailable') {
       stream.getTracks().forEach((track) => track.stop());
       return;
     }
     this.stream = stream;
     const track = stream.getAudioTracks()[0];
+    if (!track) {
+      stream.getTracks().forEach((t) => t.stop());
+      this.stream = null;
+      voiceStore.set({ mic: 'notfound', error: 'Le navigateur n’a fourni aucune piste micro.' });
+      return;
+    }
     track.onended = () => {
       if (this.stream === stream) {
         this.stopMic();

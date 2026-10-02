@@ -58,7 +58,7 @@ export const VoicePanel = () => {
                 : 'border-white/15 bg-night-900 text-white/85 hover:border-white/35'
           }`}
         >
-          <span aria-hidden>{micActive(v.mic) ? '🎤' : '🎙️'}</span> {micActive(v.mic) ? 'Micro ON' : 'Micro'}
+          <span aria-hidden>{micActive(v.mic) ? '🎤' : '🎙️'}</span> {v.mic === 'requesting' ? 'Autorisation…' : micActive(v.mic) ? 'Micro ON' : 'Micro'}
         </button>
       </div>
 
@@ -95,7 +95,7 @@ export const VoicePanel = () => {
           {v.error ?? 'Voice chat indisponible sur ce navigateur.'}
         </p>
       )}
-      <p className="text-[10px] leading-relaxed text-white/45">Sur téléphone, touche Micro puis autorise le micro de ton appareil. Aucun casque nécessaire. Le micro reste limité à ce salon.</p>
+      <p className="text-[10px] leading-relaxed text-white/45">Touche Micro pour demander l’autorisation du téléphone, puis choisis Autoriser. Aucun casque nécessaire. Le micro reste limité à ce salon.</p>
     </section>
   );
 };

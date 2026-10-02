@@ -4,6 +4,7 @@ $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 header('X-Content-Type-Options: nosniff');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('X-Frame-Options: SAMEORIGIN');
+header('Permissions-Policy: microphone=(self), camera=(), geolocation=(), payment=()');
 header('Cache-Control: no-store');
 if ($path === '/api' || str_starts_with($path, '/api/')) {
     define('RACE_RUSH_API_ENTRY', true);
