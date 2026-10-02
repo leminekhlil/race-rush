@@ -7,7 +7,7 @@ import { assetUrl } from './assetUrl';
 export type EnvName = 'city-day' | 'night' | 'sunset' | 'desert' | 'studio';
 
 export const applyEnvironment = (scene: Scene, name: EnvName, intensity = 1): CubeTexture => {
-  const tex = CubeTexture.CreateFromPrefilteredData(assetUrl(`env/${name}.env`), scene, '.env');
+  const tex = CubeTexture.CreateFromPrefilteredData(assetUrl(`env/${name}.ibl`), scene, '.env');
   tex.gammaSpace = false;
   scene.environmentTexture = tex;
   scene.environmentIntensity = intensity;

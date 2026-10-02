@@ -1,0 +1,81 @@
+# Race Rush — racerush.pro.mr document root (Hostinger shared hosting, Apache / LiteSpeed).
+# Static PWA (index.html + assets) and the Laravel API front controller (laravel-api.php).
+
+Options -Indexes -MultiViews
+DirectoryIndex index.html
+AddDefaultCharset utf-8
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. HTTPS only (Hostinger terminates TLS; X-Forwarded-Proto covers proxied setups).
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # 2. Bearer tokens (Laravel Sanctum) must reach PHP.
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # 3. Never serve hidden files nor the application folder if it was (wrongly) uploaded here.
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+    RewriteRule ^racerush-app(/|$) - [F,L]
+
+    # 4. API → Laravel (the application itself lives outside the web root, see DEPLOY_HOSTINGER.md).
+    #    The front controller is only reachable through /api/* (direct hits are refused).
+    RewriteCond %{THE_REQUEST} ^\S+\s/+laravel-api\.php [NC]
+    RewriteRule ^ - [F,L]
+    RewriteRule ^api(/.*)?$ laravel-api.php [L,QSA]
+
+    # 5. Missing static files are real 404s (never index.html: a stale cached page must not get HTML as a module).
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(assets|models|env|audio|fonts|app-icons)/ - [R=404,L]
+
+    # 6. Single-page app: unknown paths fall back to index.html (real files are served as is).
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Types for 3D / audio / PWA assets.
+<IfModule mod_mime.c>
+    AddType model/gltf-binary .glb
+    AddType application/octet-stream .ibl
+    AddType audio/mp4 .m4a
+    AddType audio/ogg .ogg
+    AddType application/wasm .wasm
+    AddType application/manifest+json .webmanifest
+    AddType font/woff2 .woff2
+    AddType text/javascript .js .mjs
+</IfModule>
+
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json application/manifest+json image/svg+xml application/wasm model/gltf-binary
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    # Voice chat needs the microphone on this origin only (still opt-in per user click).
+    Header always set Permissions-Policy "microphone=(self), camera=(), geolocation=(), payment=()"
+
+    # Hashed build files never change: cache for a year.
+    <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css|wasm)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    # Models, environment maps, audio, fonts, icons: one week.
+    <FilesMatch "\.(glb|ibl|m4a|ogg|woff2|png|svg|webp)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
+    # Always revalidate the shell, the service worker and the runtime config.
+    <FilesMatch "^(index\.html|sw\.js|config\.js|manifest\.webmanifest)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+
+# Defense in depth for sensitive file types.
+<FilesMatch "\.(env|log|sql|sqlite|ini|sh|md|lock|bak|zip)$">
+    Require all denied
+</FilesMatch>

@@ -67,6 +67,8 @@ Frein + direction à vitesse = **drift** (recharge le boost, mini-turbo à la so
 - [docs/multiplayer.md](docs/multiplayer.md) — protocole, autorité, anti-triche
 - [docs/database.md](docs/database.md) — schéma, ledger v-MRU, idempotence
 - [docs/deployment.md](docs/deployment.md) — mise en production
+- [deploy/hostinger/DEPLOY_HOSTINGER.md](deploy/hostinger/DEPLOY_HOSTINGER.md) — paquet Hostinger (public_html + API Laravel), généré par `scripts/build-hostinger.sh`
+- [deploy/realtime/README.md](deploy/realtime/README.md) — serveur temps réel sur VPS (multijoueur, récompenses, voice chat)
 - [docs/performance.md](docs/performance.md) — budgets, profils, mesures
 - [docs/adr/](docs/adr) — décisions d'architecture
 

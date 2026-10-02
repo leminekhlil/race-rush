@@ -19,8 +19,18 @@ let podium: PodiumScene | null = null;
 /** Incremented on every switch so a slow showcase build never mounts after the user moved on. */
 let generation = 0;
 
+/**
+ * Latest garage preview / framing requested by the screens. React runs child effects before parent effects, so the
+ * garage screen asks for them BEFORE App mounts the garage scene: keep them and apply on mount.
+ */
+let garageVehicle: { vehicle: VehicleId; color: string } | null = null;
+let garageFrame: { x: number; y: number; zoom: number } | null = null;
+
 const releaseGarage = () => {
-  if (mode === 'garage') releaseGarageScene();
+  if (mode !== 'garage') return;
+  releaseGarageScene();
+  garageVehicle = null;
+  garageFrame = null;
 };
 const releaseShowcase = () => {
   showcase?.dispose();
@@ -38,23 +48,28 @@ export const showBackdrop = (interactive: boolean, vehicle: VehicleId, color: st
   const host = getEngineHost();
   host.setMenuMode(true);
   const g = getGarageScene(host);
-  if (mode !== 'garage') {
+  const entering = mode !== 'garage';
+  if (entering) {
     releaseShowcase();
     releasePodium();
     g.mount();
     mode = 'garage';
   }
   g.setInteractive(interactive);
-  if (!interactive) g.setVehicle(vehicle, color);
+  if (!interactive || !garageVehicle) g.setVehicle(vehicle, color);
+  else if (entering) g.setVehicle(garageVehicle.vehicle, garageVehicle.color);
+  if (entering && garageFrame) g.setFraming(garageFrame.x, garageFrame.y, garageFrame.zoom);
 };
 
 export const garagePreview = (vehicle: VehicleId, color: string): void => {
+  garageVehicle = { vehicle, color };
   if (mode !== 'garage') return;
   getGarageScene(getEngineHost()).setVehicle(vehicle, color);
 };
 
 /** Moves the showroom vehicle into the free area between garage panels. */
 export const garageFraming = (x: number, y: number, zoom = 1): void => {
+  garageFrame = { x, y, zoom };
   if (mode !== 'garage') return;
   getGarageScene(getEngineHost()).setFraming(x, y, zoom);
 };

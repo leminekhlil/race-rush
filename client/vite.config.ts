@@ -37,7 +37,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('@babylonjs/core')) return 'babylon';
           if (id.includes('react')) return 'react';
           return undefined;
         },

@@ -1,4 +1,4 @@
-// Dev tool: bake public/_hdr/*.hdr into public/env/*.env through Babylon in headless Chromium.
+// Dev tool: bake public/_hdr/*.hdr into public/env/*.ibl (Babylon .env format) through Babylon in headless Chromium.
 import { chromium } from '@playwright/test';
 import { writeFileSync, mkdirSync } from 'node:fs';
 const jobs = JSON.parse(process.argv[2]);

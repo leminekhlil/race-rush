@@ -12,3 +12,6 @@ backend/.env
 backend/storage/*.key
 .DS_Store
 dist-portable/
+
+# Hostinger deployment packages (built by scripts/build-hostinger.sh)
+dist-hostinger/

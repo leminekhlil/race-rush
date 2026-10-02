@@ -52,7 +52,7 @@ const request = async <T>(method: string, path: string, body?: unknown, headers:
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(30000),
     });
   } catch {
     throw new ApiError(0, 'network', 'Serveur injoignable.');

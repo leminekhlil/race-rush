@@ -13,6 +13,8 @@ const mk = async (b, label, opts) => {
   const ctx = await b.newContext(opts);
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`${label} pageerror: ${e.message}`));
+  page.on('console', (m) => m.type() === 'warning' && m.text().includes('[api]') && console.log('  ', label, m.text()));
+  page.on('response', (r) => r.url().includes('/api/') && r.status() >= 400 && console.log('  ', label, r.status(), r.url()));
   page.on('console', (m) => m.type() === 'error' && !/vibrate|favicon/.test(m.text()) && errors.push(`${label}: ${m.text()}`));
   await page.goto(BASE);
   // Skip the cinematic intro (it covers the screen and would swallow the first click).

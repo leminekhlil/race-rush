@@ -1,6 +1,6 @@
 import { isVehicleId, NO_UPGRADES, PAINTS, type LobbyDTO, type UpgradeLevels, type VehicleId } from '@race-rush/shared';
 import { api, ApiError, hasToken } from '../net/api';
-import { RealtimeClient } from '../net/realtime';
+import { RealtimeClient, realtimeUrl } from '../net/realtime';
 import { netBridge } from '../net/raceBridge';
 import { appStore, goTo, notify, type Profile } from '../state/appStore';
 import { settingsStore } from '../state/settings';
@@ -65,7 +65,18 @@ const setProfile = (profile: Profile | null) => appStore.set({ profile });
 
 export const actions = {
   async boot(): Promise<void> {
-    const catalogP = api.catalog().then((catalog) => appStore.set({ catalog, apiStatus: 'online' })).catch(() => appStore.set({ apiStatus: 'offline' }));
+    const catalogP = api
+      .catalog()
+      .then((catalog) => appStore.set({ catalog, apiStatus: 'online' }))
+      .catch((err) => {
+        console.warn('[api] unreachable at boot', err);
+        appStore.set({ apiStatus: 'offline' });
+        // Transient failures (slow device while the 3D scene builds, flaky network): one background retry.
+        window.setTimeout(() => {
+          if (appStore.get().apiStatus !== 'offline') return;
+          api.catalog().then((catalog) => appStore.set({ catalog, apiStatus: 'online' })).catch(() => undefined);
+        }, 5000);
+      });
     if (hasToken()) {
       try {
         setProfile(await api.me());
@@ -98,7 +109,8 @@ export const actions = {
       // The boot probe may have failed transiently (slow device while the 3D scene builds): probe again first.
       try {
         appStore.set({ catalog: await api.catalog(), apiStatus: 'online' });
-      } catch {
+      } catch (err) {
+        console.warn('[api] still unreachable', err);
         appStore.set({ busy: false });
         return goOffline();
       }
@@ -154,6 +166,7 @@ export const actions = {
   /** Connects to the realtime server with a fresh signed ticket. */
   async ensureRealtime(): Promise<boolean> {
     if (realtime.connected) return true;
+    if (!realtimeUrl()) return false; // no realtime server configured (config.js)
     try {
       const ticket = appStore.get().profile ? (await api.ticket()).ticket : null;
       await realtime.connect(ticket, appStore.get().profile?.name ?? settingsStore.get().playerName ?? 'Pilote');

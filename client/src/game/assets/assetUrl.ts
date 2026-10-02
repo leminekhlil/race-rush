@@ -4,4 +4,4 @@
  */
 const PORTABLE = import.meta.env.VITE_PORTABLE_ASSETS === '1';
 
-export const assetUrl = (path: string): string => new URL(PORTABLE ? path.replace(/\.(glb|env|m4a)$/, '.$1.mp4') : path, document.baseURI).href;
+export const assetUrl = (path: string): string => new URL(PORTABLE ? path.replace(/\.(glb|ibl|m4a)$/, '.$1.mp4') : path, document.baseURI).href;

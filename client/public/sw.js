@@ -3,10 +3,10 @@
  * - Hashed build assets, fonts, icons: cache-first (immutable).
  * - Never cached: /api/* (accounts, rewards) and /ws (realtime) — dynamic multiplayer data stays live.
  */
-const VERSION = 'rr-v1';
+const VERSION = 'rr-v2';
 const SHELL = `${VERSION}-shell`;
 const STATIC = `${VERSION}-static`;
-const SHELL_URLS = ['./', './index.html', './manifest.webmanifest', './fonts/fonts.css', './fonts/RussoOne-400.woff2', './fonts/Rajdhani-600.woff2', './fonts/Rajdhani-700.woff2', './icons/icon-192.png'];
+const SHELL_URLS = ['./', './index.html', './manifest.webmanifest', './fonts/fonts.css', './fonts/RussoOne-400.woff2', './fonts/Rajdhani-600.woff2', './fonts/Rajdhani-700.woff2', './app-icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((c) => c.addAll(SHELL_URLS)).then(() => self.skipWaiting()));
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (/\/(assets|fonts|icons)\//.test(url.pathname)) {
+  if (/\/(assets|fonts|app-icons)\//.test(url.pathname)) {
     event.respondWith(
       caches.match(req).then(
         (hit) =>

@@ -18,7 +18,21 @@ export interface RealtimeHandlers {
   onClosed(): void;
 }
 
-const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined) ?? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+declare global {
+  interface Window {
+    RACE_RUSH_CONFIG?: { realtimeUrl?: string };
+  }
+}
+
+/** Realtime endpoint: build-time VITE_WS_URL, else runtime config.js (`''` disables realtime), else same origin. */
+export const realtimeUrl = (): string | null => {
+  const built = import.meta.env.VITE_WS_URL as string | undefined;
+  if (built) return built;
+  const rt = typeof window !== 'undefined' ? window.RACE_RUSH_CONFIG?.realtimeUrl : undefined;
+  if (rt === '' || rt === 'off') return null;
+  if (rt && rt !== 'auto') return rt;
+  return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+};
 
 /**
  * WebSocket client: authentication, clock sync (NTP-style, best RTT sample), message routing.
@@ -45,7 +59,12 @@ export class RealtimeClient implements RaceNetAdapter {
     this.closedByUs = false;
     return new Promise((resolve, reject) => {
       let settled = false;
-      const ws = new WebSocket(WS_URL);
+      const url = realtimeUrl();
+      if (!url) {
+        reject(new Error('realtime disabled'));
+        return;
+      }
+      const ws = new WebSocket(url);
       this.ws = ws;
       const fail = (msg: string) => {
         if (!settled) {

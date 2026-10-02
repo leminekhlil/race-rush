@@ -1,3 +1,4 @@
+import { realtimeUrl } from '../../net/realtime';
 import { useState } from 'react';
 import { TRACKS, VEHICLES } from '@race-rush/shared';
 import { useStore } from '../../state/store';
@@ -59,6 +60,8 @@ export const PlayScreen = () => {
   const [code, setCode] = useState('');
   const sel = currentSelection();
   const online = apiStatus !== 'offline' && !!profile;
+  // Multiplayer, server-validated rewards and voice need the realtime server (see public config.js).
+  const multi = online && realtimeUrl() !== null;
 
   return (
     <div className="absolute inset-0 flex flex-col bg-night-950/55 backdrop-blur-[2px]" data-testid="play-screen">
@@ -82,7 +85,7 @@ export const PlayScreen = () => {
             <div>
               <SectionTitle>Course rapide</SectionTitle>
               <div className="font-display text-xl">Toi + 4 bots</div>
-              <p className="text-sm leading-relaxed text-white/65">{online ? 'Résultats validés par le serveur : XP et v-MRU.' : 'Entraînement hors ligne (sans récompense).'}</p>
+              <p className="text-sm leading-relaxed text-white/65">{multi ? 'Résultats validés par le serveur : XP et v-MRU.' : 'Entraînement hors ligne (sans récompense).'}</p>
             </div>
             <TrackPicker prefix="quick" value={quickTrack} onChange={setQuickTrack} />
             <Button variant="gold" size="lg" disabled={busy} onClick={() => openVehicleSelect({ kind: 'quick', trackId: quickTrack })} data-testid="quick-race" className="mt-auto">
@@ -101,9 +104,14 @@ export const PlayScreen = () => {
               <span className="text-sm font-bold tracking-wider text-white/75 uppercase">Compléter avec bots</span>
               <input type="checkbox" checked={bots} onChange={(e) => setBots(e.target.checked)} className="h-6 w-6 accent-gold-500" />
             </label>
-            <Button variant="volt" size="lg" disabled={busy || !online} onClick={() => actions.createLobby({ trackId: hostTrack, laps, botFill: bots })} data-testid="create-lobby" className="mt-auto">
+            <Button variant="volt" size="lg" disabled={busy || !multi} onClick={() => actions.createLobby({ trackId: hostTrack, laps, botFill: bots })} data-testid="create-lobby" className="mt-auto">
               CRÉER
             </Button>
+            {online && !multi && (
+              <p className="text-xs leading-relaxed text-white/55" data-testid="multi-unavailable">
+                Multijoueur et chat vocal bientôt disponibles sur ce serveur.
+              </p>
+            )}
           </Panel>
 
           <Panel className="flex flex-col gap-3 p-4">
@@ -121,7 +129,7 @@ export const PlayScreen = () => {
               autoCapitalize="characters"
               className="w-full rounded-2xl border border-volt-400/40 bg-night-950/70 py-3 text-center font-display text-4xl tracking-[0.4em] text-gold-300 placeholder:text-white/15 focus:border-gold-400 focus:ring-4 focus:ring-gold-400/25 focus:outline-none"
             />
-            <Button variant="volt" size="lg" disabled={busy || code.length !== 4 || !online} onClick={() => actions.joinLobby(code)} data-testid="join-lobby" className="mt-auto">
+            <Button variant="volt" size="lg" disabled={busy || code.length !== 4 || !multi} onClick={() => actions.joinLobby(code)} data-testid="join-lobby" className="mt-auto">
               REJOINDRE
             </Button>
           </Panel>
