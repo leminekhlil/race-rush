@@ -15,6 +15,10 @@ export interface QualityParams {
   fogDensity: number;
   antialias: boolean;
   glow: boolean;
+  /** Post-processing: none (ECO), tone mapping + light bloom (STANDARD), full (HIGH). */
+  postFx: 'none' | 'basic' | 'full';
+  /** Planar reflections (garage turntable, wet-look surfaces). */
+  reflections: boolean;
 }
 
 export const QUALITY_PRESETS: Record<ResolvedQuality, QualityParams> = {
@@ -29,6 +33,8 @@ export const QUALITY_PRESETS: Record<ResolvedQuality, QualityParams> = {
     fogDensity: 0.0062,
     antialias: false,
     glow: false,
+    postFx: 'none',
+    reflections: false,
   },
   standard: {
     name: 'standard',
@@ -41,6 +47,8 @@ export const QUALITY_PRESETS: Record<ResolvedQuality, QualityParams> = {
     fogDensity: 0.0036,
     antialias: true,
     glow: false,
+    postFx: 'basic',
+    reflections: true,
   },
   high: {
     name: 'high',
@@ -53,6 +61,8 @@ export const QUALITY_PRESETS: Record<ResolvedQuality, QualityParams> = {
     fogDensity: 0.0022,
     antialias: true,
     glow: true,
+    postFx: 'full',
+    reflections: true,
   },
 };
 

@@ -334,7 +334,7 @@ export const GarageScreen = () => {
   }, [viewing, color]);
 
   useEffect(() => {
-    if (wide) garageFraming(-0.02, 0.11, 1.02);
+    if (wide) garageFraming(-0.02, 0.1, 1.2);
     else if (!portrait) garageFraming(-0.12, -0.04, 1);
   }, [wide, portrait]);
 

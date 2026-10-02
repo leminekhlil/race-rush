@@ -13,6 +13,14 @@ import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { VehicleId } from '@race-rush/shared';
 import type { EngineHost } from '../engine/EngineHost';
 import { createVehicleModel, type VehicleModel } from '../scene/VehicleFactory';
+import { ShadowGenerator } from '@babylonjs/core/Lights/Shadows/shadowGenerator';
+import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent';
+import { MirrorTexture } from '@babylonjs/core/Materials/Textures/mirrorTexture';
+import { Plane } from '@babylonjs/core/Maths/math.plane';
+import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
+import type { Mesh } from '@babylonjs/core/Meshes/mesh';
+import type { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { setupPostFx } from '../render/postFx';
 import { buildWorkshop } from './workshop';
 import { hasGlb, prepareVehicles, readyContainer } from '../assets/VehicleAssets';
 import { applyEnvironment } from '../assets/environment';
@@ -70,6 +78,7 @@ export class GarageScene {
     // Arcade workshop (garage reference); the turntable top carries the vehicle.
     this.turntable = buildWorkshop(scene);
     applyEnvironment(scene, 'studio', 1);
+    this.setupShowroom(key);
     // Start on a 3/4 front view (vehicles face +z, the camera looks from -z).
     this.turntable.rotation.y = Math.PI - 0.75;
 
@@ -80,6 +89,53 @@ export class GarageScene {
     scene.onPointerObservable.add(() => {
       this.idle = 0;
     });
+  }
+
+  private shadow: ShadowGenerator | null = null;
+  private mirror: MirrorTexture | null = null;
+
+  /** Showroom polish: soft shadows on the turntable, planar reflection, glow on neons, tone-mapped post FX. */
+  private setupShowroom(key: DirectionalLight): void {
+    const q = this.host.quality;
+    const top = this.turntable as Mesh;
+    key.position = new Vector3(6, 14, -8);
+    key.intensity = 1.25;
+    if (q.name !== 'eco') {
+      const sg = new ShadowGenerator(1024, key);
+      sg.useBlurExponentialShadowMap = true;
+      sg.blurKernel = 24;
+      sg.depthScale = 60;
+      sg.setDarkness(0.35);
+      this.shadow = sg;
+      top.receiveShadows = true;
+    }
+    if (q.reflections) {
+      const mirror = new MirrorTexture('turntableMirror', { ratio: q.name === 'high' ? 0.5 : 0.35 }, this.scene, true);
+      mirror.mirrorPlane = new Plane(0, -1, 0, 0.53);
+      mirror.adaptiveBlurKernel = 24;
+      mirror.level = 0.32;
+      mirror.renderList = [];
+      const mat = top.material as StandardMaterial;
+      mat.reflectionTexture = mirror;
+      this.mirror = mirror;
+    }
+    if (q.glow) {
+      const glow = new GlowLayer('garageGlow', this.scene, { mainTextureRatio: 0.4, blurKernelSize: 32 });
+      glow.intensity = 0.7;
+    }
+    setupPostFx(this.scene, this.camera, q, { exposure: 1.05, contrast: 1.2, bloomThreshold: 0.75, vignette: 2.2 });
+  }
+
+  private registerCasters(model: VehicleModel): void {
+    for (const m of model.meshes) {
+      if (m.name.endsWith('-shadow')) {
+        // The real shadow replaces the fake contact blob when available.
+        if (this.shadow) m.setEnabled(false);
+        continue;
+      }
+      this.shadow?.addShadowCaster(m, true);
+      this.mirror?.renderList?.push(m);
+    }
   }
 
   setInteractive(on: boolean): void {
@@ -150,6 +206,7 @@ export class GarageScene {
     this.vehicleId = id;
     this.model = createVehicleModel(this.scene, id, color, `garage-${id}`);
     this.model.root.parent = this.turntable;
+    this.registerCasters(this.model);
     this.model.root.position.y = 0.04;
     // Pop-in.
     this.model.root.scaling.setAll(0.6);
