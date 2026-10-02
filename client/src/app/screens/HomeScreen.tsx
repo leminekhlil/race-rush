@@ -1,3 +1,4 @@
+import { realtimeUrl } from '../../net/realtime';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { VEHICLES } from '@race-rush/shared';
 import { useStore } from '../../state/store';
@@ -221,6 +222,8 @@ export const HomeScreen = ({ onSettings }: { onSettings: () => void }) => {
   const sel = currentSelection();
   const canPlay = !!profile || (apiStatus === 'offline' && !!playerName);
   const online = apiStatus !== 'offline' && !!profile;
+  // Multiplayer needs the realtime server (public config.js).
+  const multi = online && realtimeUrl() !== null;
   const name = profile?.name ?? playerName;
 
   return (
@@ -285,16 +288,16 @@ export const HomeScreen = ({ onSettings }: { onSettings: () => void }) => {
             <MenuButton
               tone="blue"
               icon={<UsersIcon />}
-              disabled={!online || busy}
+              disabled={!multi || busy}
               onClick={() => actions.createLobby({ trackId, laps: 3, botFill: true })}
               testId="home-create"
             >
               CRÉER UNE PARTIE
             </MenuButton>
-            <MenuButton tone="violet" icon={<LinkIcon />} disabled={!online} onClick={() => setModal('join')} testId="home-join">
+            <MenuButton tone="violet" icon={<LinkIcon />} disabled={!multi} onClick={() => setModal('join')} testId="home-join">
               REJOINDRE UNE PARTIE
             </MenuButton>
-            <div className="rounded-xl bg-night-950/60 px-3 py-1.5 text-xs font-semibold text-white/75 backdrop-blur-sm">
+            <div className="rounded-xl bg-night-950/60 py-1.5 pr-3 pl-12 text-xs font-semibold text-white/75 backdrop-blur-sm">
               <span className="text-gold-300">{VEHICLES[sel.vehicle].name}</span>
               {profile ? ` · Niv. ${profile.level} · ${profile.racesPlayed} courses` : ''}
               {apiStatus === 'offline' && <span className="block text-gold-300">● Hors ligne — entraînement sans récompense</span>}

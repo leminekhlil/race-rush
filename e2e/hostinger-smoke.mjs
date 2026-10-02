@@ -32,6 +32,7 @@ await page.waitForTimeout(1500);
 const a = await audio();
 if (a.ctx !== 'running') errors.push(`audio not running after gesture: ${a.ctx}`);
 else ok('audio unlocked by the first tap (no autoplay flag)');
+if (await page.getByTestId('home-create').isEnabled()) errors.push('home "Créer une partie" should be disabled without realtime server');
 await page.screenshot({ path: `${OUT}/prod-home.png` });
 
 await page.getByTestId('garage-button').click();
