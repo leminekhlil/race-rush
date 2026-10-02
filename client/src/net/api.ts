@@ -52,12 +52,17 @@ const request = async <T>(method: string, path: string, body?: unknown, headers:
         ...headers,
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(15000),
     });
   } catch {
     throw new ApiError(0, 'network', 'Serveur injoignable.');
   }
-  const text = await res.text();
+  let text: string;
+  try {
+    text = await res.text();
+  } catch {
+    throw new ApiError(0, 'network', 'Serveur injoignable.');
+  }
   let data: unknown = null;
   try {
     data = text ? JSON.parse(text) : null;

@@ -21,6 +21,12 @@ export const config = {
   secret: process.env.RACERUSH_REALTIME_SECRET ?? readBackendEnv('RACERUSH_REALTIME_SECRET') ?? '',
   /** Allows ticket-less connections (no rewards). Useful for local dev without the API. */
   allowAnonymous: (process.env.ALLOW_ANONYMOUS ?? 'true') === 'true',
+  /** Voice chat (WebRTC). STUN is public; TURN credentials are minted per client (coturn `use-auth-secret`). */
+  stunUrls: (process.env.VOICE_STUN_URLS ?? 'stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302').split(',').map((s) => s.trim()).filter(Boolean),
+  turnUrls: (process.env.VOICE_TURN_URLS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+  turnSecret: process.env.VOICE_TURN_SECRET ?? '',
+  turnTtl: Number(process.env.VOICE_TURN_TTL ?? 3600),
+  voiceEnabled: (process.env.VOICE_ENABLED ?? 'true') === 'true',
   tickHz: 20,
   simSubsteps: 3,
 };

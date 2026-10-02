@@ -195,7 +195,7 @@ export const App = () => {
           </div>
         )}
         <NoticeHost />
-        {!intro && screen !== 'race' && screen !== 'boot' && (
+        {!intro && (screen === 'home' || screen === 'play' || screen === 'garage' || screen === 'select') && (
           <div className="pointer-events-none absolute z-20" style={{ left: 'calc(12px + var(--safe-l, 0px))', bottom: 'calc(22px + var(--safe-b))' }}>
             <SoundChip compact />
           </div>

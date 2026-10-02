@@ -27,7 +27,31 @@ export interface LobbyPlayerDTO {
   isHost: boolean;
   connected: boolean;
   level: number;
+  /** Voice chat participation (opt-in). Absent = voice not enabled. */
+  voice?: VoiceFlagsDTO;
 }
+
+/** Voice chat flags broadcast with the lobby: `on` = in the voice channel, `mic` = microphone open and unmuted. */
+export interface VoiceFlagsDTO {
+  on: boolean;
+  mic: boolean;
+}
+
+/** WebRTC signalling payload relayed by the realtime server (never interpreted beyond size / shape checks). */
+export type VoiceSignal =
+  | { kind: 'offer' | 'answer'; sdp: string }
+  | { kind: 'ice'; candidate: string; sdpMid: string | null; sdpMLineIndex: number | null }
+  | { kind: 'restart' };
+
+export interface IceServerDTO {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
+/** Voice chat limits (mesh: every participant connects to every other one). */
+export const VOICE_MAX_SDP = 12000;
+export const VOICE_MAX_CANDIDATE = 600;
 
 export interface LobbyDTO {
   code: string;
@@ -112,7 +136,9 @@ export type ClientMessage =
   | { t: 'race.loaded' }
   | { t: 'race.state'; seq: number; x: number; y: number; z: number; h: number; v: number; f: number }
   | { t: 'race.respawn' }
-  | { t: 'race.quit' };
+  | { t: 'race.quit' }
+  | { t: 'voice.state'; on: boolean; mic: boolean }
+  | { t: 'voice.signal'; to: string; signal: VoiceSignal };
 
 export type ServerMessage =
   | { t: 'welcome'; id: string; name: string; serverTime: number; authenticated: boolean }
@@ -125,7 +151,9 @@ export type ServerMessage =
   | { t: 'race.snapshot'; s: number; r: RacerStateDTO[] }
   | { t: 'race.standings'; s: number; rows: StandingDTO[] }
   | { t: 'race.finish'; id: string; position: number; time: number }
-  | { t: 'race.results'; raceId: string; results: ResultDTO[]; rewards: 'granted' | 'unavailable' | 'none' };
+  | { t: 'race.results'; raceId: string; results: ResultDTO[]; rewards: 'granted' | 'unavailable' | 'none' }
+  | { t: 'voice.config'; iceServers: IceServerDTO[]; ttl: number }
+  | { t: 'voice.signal'; from: string; signal: VoiceSignal };
 
 export const isClientMessage = (m: unknown): m is ClientMessage =>
   typeof m === 'object' && m !== null && typeof (m as { t?: unknown }).t === 'string';

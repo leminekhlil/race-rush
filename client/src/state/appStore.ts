@@ -90,3 +90,6 @@ export const goTo = (screen: Screen) => appStore.set({ screen });
 export const openVehicleSelect = (pending: PendingSelect) => appStore.set({ pendingSelect: pending, screen: 'select' });
 
 export type { GridEntry };
+
+// Diagnostics hook for automated tests (dev builds only).
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __raceRushApp: unknown }).__raceRushApp = appStore;

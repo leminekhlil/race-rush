@@ -206,3 +206,51 @@ describe('realtime race', () => {
     120000,
   );
 });
+
+describe('voice signalling', () => {
+  it('relays WebRTC signals only between lobby members who opted in, and mints no TURN creds without a secret', async () => {
+    const a = new TestClient();
+    const b = new TestClient();
+    const c = new TestClient();
+    await a.connect('Alice');
+    await b.connect('Bob');
+    await c.connect('Eve');
+    a.send({ t: 'lobby.create', trackId: 'city', laps: 3, botFill: false, vehicle: 'sport', color: 'red' });
+    const created = (await a.wait((m) => m.t === 'lobby.state')) as Extract<ServerMessage, { t: 'lobby.state' }>;
+    b.send({ t: 'lobby.join', code: created.lobby.code, vehicle: 'moto', color: 'blue' });
+    await b.wait((m) => m.t === 'lobby.state' && m.lobby.players.length === 2);
+
+    // Not opted in yet: signals are dropped.
+    a.send({ t: 'voice.signal', to: b.id, signal: { kind: 'offer', sdp: 'v=0\r\n' } });
+
+    a.send({ t: 'voice.state', on: true, mic: true });
+    const cfg = (await a.wait((m) => m.t === 'voice.config')) as Extract<ServerMessage, { t: 'voice.config' }>;
+    expect(cfg.iceServers.length).toBeGreaterThan(0);
+    expect(cfg.iceServers.every((s) => !s.credential)).toBe(true);
+    const st = (await b.wait((m) => m.t === 'lobby.state' && !!m.lobby.players.find((p) => p.id === a.id)?.voice)) as Extract<ServerMessage, { t: 'lobby.state' }>;
+    expect(st.lobby.players.find((p) => p.id === a.id)?.voice).toEqual({ on: true, mic: true });
+
+    b.send({ t: 'voice.state', on: true, mic: false });
+    await b.wait((m) => m.t === 'voice.config');
+    a.send({ t: 'voice.signal', to: b.id, signal: { kind: 'offer', sdp: 'v=0\r\no=- 1 1 IN IP4 0.0.0.0\r\n' } });
+    const got = (await b.wait((m) => m.t === 'voice.signal')) as Extract<ServerMessage, { t: 'voice.signal' }>;
+    expect(got.from).toBe(a.id);
+    expect(got.signal.kind).toBe('offer');
+
+    // Malformed payloads and outsiders are ignored.
+    a.send({ t: 'voice.signal', to: b.id, signal: { kind: 'offer', sdp: 'x'.repeat(20) } } as ClientMessage);
+    c.send({ t: 'voice.signal', to: b.id, signal: { kind: 'ice', candidate: 'candidate:1', sdpMid: '0', sdpMLineIndex: 0 } });
+    a.send({ t: 'voice.signal', to: b.id, signal: { kind: 'ice', candidate: 'candidate:2', sdpMid: '0', sdpMLineIndex: 0 } });
+    const ice = (await b.wait((m) => m.t === 'voice.signal')) as Extract<ServerMessage, { t: 'voice.signal' }>;
+    expect(ice.from).toBe(a.id);
+    expect(ice.signal).toMatchObject({ kind: 'ice', candidate: 'candidate:2' });
+
+    // Leaving the lobby clears the voice flags.
+    a.send({ t: 'lobby.leave' });
+    const after = (await b.wait((m) => m.t === 'lobby.state' && m.lobby.players.length === 1)) as Extract<ServerMessage, { t: 'lobby.state' }>;
+    expect(after.lobby.players[0].voice).toEqual({ on: true, mic: false });
+    a.close();
+    b.close();
+    c.close();
+  });
+});

@@ -158,12 +158,13 @@ class AudioEngineImpl {
     this.master.gain.setTargetAtTime(s.muted ? 0 : s.masterVolume, t, 0.03);
     this.engine!.gain.setTargetAtTime(s.engineVolume * (0.55 + 0.45 * this.duckLevel), t, 0.15);
     this.sfx!.gain.setTargetAtTime(s.sfxVolume, t, 0.03);
-    this.music!.gain.setTargetAtTime(s.musicVolume, t, 0.03);
+    this.music!.gain.setTargetAtTime(s.musicVolume * (0.3 + 0.7 * this.duckLevel), t, 0.15);
     this.voice!.gain.setTargetAtTime(s.voiceVolume, t, 0.03);
   }
 
-  /** Lowers engines a little while someone speaks in voice chat (1 = no ducking). */
-  duckEngines(level: number): void {
+  /** Lowers music and engines while someone speaks in voice chat (1 = no ducking, 0 = maximum ducking). */
+  duckForVoice(level: number): void {
+    if (level === this.duckLevel) return;
     this.duckLevel = level;
     this.applyVolumes();
   }

@@ -6,6 +6,7 @@ import { appStore, goTo, notify, type Profile } from '../state/appStore';
 import { settingsStore } from '../state/settings';
 import { createOfflineRace } from '../game/race/offline';
 import { AudioEngine } from '../game/audio/AudioEngine';
+import { VoiceChat } from '../net/voice/VoiceChat';
 
 /** Automated-test hook (dev builds or VITE_TEST_HOOKS=1): the local car drives itself. */
 const testAutopilot = (): boolean =>
@@ -51,6 +52,7 @@ netBridge.quitHandler = () => {
 };
 
 export const getRealtime = () => realtime;
+VoiceChat.bind(realtime);
 
 export const currentSelection = (): { vehicle: VehicleId; color: string; upgrades: UpgradeLevels } => {
   const p = appStore.get().profile;
@@ -91,8 +93,16 @@ export const actions = {
       notify('Serveur indisponible : mode hors ligne (sans récompenses).', 'info');
       return true;
     };
-    if (appStore.get().apiStatus === 'offline') return goOffline();
     appStore.set({ busy: true });
+    if (appStore.get().apiStatus === 'offline') {
+      // The boot probe may have failed transiently (slow device while the 3D scene builds): probe again first.
+      try {
+        appStore.set({ catalog: await api.catalog(), apiStatus: 'online' });
+      } catch {
+        appStore.set({ busy: false });
+        return goOffline();
+      }
+    }
     try {
       const profile = await api.guest(clean);
       settingsStore.set({ playerName: clean });

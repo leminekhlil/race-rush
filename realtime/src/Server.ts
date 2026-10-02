@@ -6,6 +6,7 @@ import { Lobby } from './Lobby';
 import { config } from './config';
 import { log } from './logger';
 import { verifyTicket } from './tickets';
+import { iceServersFor, sanitizeSignal } from './voice';
 
 // No 0/O/1/I to keep codes readable when shared aloud.
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -27,7 +28,7 @@ export class RealtimeServer {
       res.writeHead(404);
       res.end();
     });
-    this.wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
+    this.wss = new WebSocketServer({ noServer: true, maxPayload: 16384 });
     this.http.on('upgrade', (req, socket, head) => {
       if (!req.url?.startsWith('/ws')) {
         socket.destroy();
@@ -87,7 +88,7 @@ export class RealtimeServer {
         return;
       }
       if (!client.allowMessage()) {
-        if (msg.t === 'race.state') return; // silently drop floods
+        if (msg.t === 'race.state' || msg.t.startsWith('voice.')) return; // silently drop floods
       }
       try {
         this.handle(client, msg);
@@ -219,6 +220,29 @@ export class RealtimeServer {
       case 'race.quit': {
         const lobby = this.lobbyOf(client);
         lobby?.race?.onDisconnect(client);
+        return;
+      }
+      case 'voice.state': {
+        const lobby = this.lobbyOf(client);
+        if (!lobby) return;
+        if (!config.voiceEnabled || lobby.solo) return this.error(client, 'voice_unavailable', 'Voice chat indisponible pour cette partie.');
+        const on = msg.on === true;
+        const wasOn = client.voice.on;
+        lobby.setVoice(client, on, msg.mic === true);
+        if (on && !wasOn) {
+          client.send({ t: 'voice.config', ...iceServersFor(client.id) });
+          log('info', 'voice.joined', { code: lobby.code, client: client.id });
+        }
+        return;
+      }
+      case 'voice.signal': {
+        const lobby = this.lobbyOf(client);
+        if (!lobby || !client.voice.on || typeof msg.to !== 'string' || msg.to === client.id) return;
+        const peer = lobby.member(msg.to);
+        if (!peer?.voice.on) return; // only between two lobby members who both opted in
+        const signal = sanitizeSignal(msg.signal);
+        if (!signal) return;
+        peer.send({ t: 'voice.signal', from: client.id, signal });
         return;
       }
       default:

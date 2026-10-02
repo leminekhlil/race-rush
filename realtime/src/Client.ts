@@ -15,6 +15,8 @@ export class Client {
   vehicle: VehicleId = 'sport';
   color = 'red';
   alive = true;
+  /** Voice chat flags (opt-in, scoped to the current lobby). */
+  voice = { on: false, mic: false };
   private msgWindowStart = Date.now();
   private msgCount = 0;
 

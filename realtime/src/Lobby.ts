@@ -63,6 +63,7 @@ export class Lobby {
   remove(client: Client): void {
     this.members = this.members.filter((m) => m.client !== client);
     client.lobbyCode = null;
+    client.voice = { on: false, mic: false };
     if (this.race) {
       this.race.onDisconnect(client);
       if (this.race.abortIfEmpty()) {
@@ -212,8 +213,22 @@ export class Lobby {
         isHost: m.client.id === this.hostId,
         connected: m.client.connected,
         level: m.client.level,
+        ...(m.client.voice.on ? { voice: { ...m.client.voice } } : {}),
       })),
     };
+  }
+
+  /** Voice opt-in / mic state change: everyone in the lobby sees who can hear and who has an open mic. */
+  setVoice(client: Client, on: boolean, mic: boolean): void {
+    if (!this.has(client)) return;
+    const prev = client.voice;
+    client.voice = { on, mic: on && mic };
+    if (prev.on !== client.voice.on || prev.mic !== client.voice.mic) this.broadcastState();
+  }
+
+  /** Finds a lobby member by id (voice signalling stays inside one lobby). */
+  member(id: string): Client | undefined {
+    return this.members.find((m) => m.client.id === id)?.client;
   }
 
   broadcast(msg: ServerMessage): void {

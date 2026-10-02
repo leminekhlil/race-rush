@@ -4,6 +4,7 @@ import { useStore } from '../../state/store';
 import { hudStore } from '../../game/race/hud';
 import type { RaceSession } from '../../game/race/RaceSession';
 import { settingsStore } from '../../state/settings';
+import { VoiceHud } from './VoiceControls';
 import { CheckeredFlagIcon, StopwatchIcon } from './HudIcons';
 
 const ordinal = (n: number) => (n === 1 ? '1er' : `${n}e`);
@@ -197,6 +198,7 @@ export const RaceHud = ({ session, compact, leading }: RaceHudProps) => {
             </li>
           ))}
         </ol>
+        <VoiceHud />
       </div>
 
       {/* Top-right: [pause] lap + stopwatch + minimap */}

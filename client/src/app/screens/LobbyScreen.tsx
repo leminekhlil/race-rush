@@ -7,6 +7,7 @@ import { VehicleIcon } from '../components/ui';
 import { BackIcon, CheckIcon, ChevronIcon, CopyIcon, CrownIcon, LockIcon, PersonIcon, PlayIcon, PlusIcon } from '../components/icons';
 import { AudioEngine } from '../../game/audio/AudioEngine';
 import { useViewport } from '../useViewport';
+import { PlayerVoiceBadge, VoicePanel } from '../components/VoiceControls';
 
 const MAP_INFO: Record<string, { label: string; art: string }> = {
   city: {
@@ -43,7 +44,7 @@ const Arrow = ({ dir, onClick, disabled, label }: { dir: 'left' | 'right'; onCli
 /** Player card above each vehicle (lobby reference): avatar, name, TOI / host crown, ready state. */
 const PlayerCard = ({ p, me, compact }: { p: LobbyPlayerDTO; me: boolean; compact: boolean }) => (
   <li
-    className={`flex min-w-0 items-center gap-2 rounded-xl border-2 bg-night-950/80 p-1.5 shadow-xl backdrop-blur-sm ${me ? 'border-gold-400' : 'border-white/10'} ${compact ? '' : 'tall:p-2'}`}
+    className={`relative flex min-w-0 items-center gap-2 rounded-xl border-2 bg-night-950/80 p-1.5 shadow-xl backdrop-blur-sm ${me ? 'border-gold-400' : 'border-white/10'} ${compact ? '' : 'tall:p-2'}`}
     data-testid={`lobby-player-${p.id}`}
   >
     <span
@@ -76,6 +77,11 @@ const PlayerCard = ({ p, me, compact }: { p: LobbyPlayerDTO; me: boolean; compac
         </span>
       )}
     </span>
+    {!p.isBot && (
+      <span className="absolute -right-1.5 -top-2.5">
+        <PlayerVoiceBadge playerId={p.id} />
+      </span>
+    )}
   </li>
 );
 
@@ -337,6 +343,7 @@ export const LobbyScreen = () => {
               <CopyIcon className="h-6 w-6" />
             </button>
           </Card>
+          <VoicePanel />
           {settings}
           {myVehicle}
         </div>

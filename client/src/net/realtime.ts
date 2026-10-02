@@ -8,6 +8,7 @@ import {
 } from '@race-rush/shared';
 import type { RaceNetAdapter } from '../game/race/RaceSession';
 import { netBridge } from './raceBridge';
+import { VoiceChat } from './voice/VoiceChat';
 
 export interface RealtimeHandlers {
   onLobby(lobby: LobbyDTO | null): void;
@@ -100,7 +101,14 @@ export class RealtimeClient implements RaceNetAdapter {
         return;
       }
       case 'error':
+        if (VoiceChat.onServerError(m.code)) return;
         this.handlers.onError(m.code, m.message);
+        return;
+      case 'voice.config':
+        VoiceChat.onConfig(m.iceServers);
+        return;
+      case 'voice.signal':
+        VoiceChat.onSignal(m.from, m.signal);
         return;
       case 'lobby.state':
         this.handlers.onLobby(m.lobby);
