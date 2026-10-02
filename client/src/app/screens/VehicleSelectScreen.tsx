@@ -50,7 +50,7 @@ const VehicleCard = ({ id, color, selected, onSelect }: { id: VehicleId; color: 
           }}
         />
         {thumb ? (
-          <img src={thumb} alt={spec.name} className="relative z-10 max-h-full w-full object-contain drop-shadow-[0_8px_10px_rgba(0,0,0,0.45)]" draggable={false} />
+          <img src={thumb} alt={spec.name} className="relative z-10 h-full w-full object-contain drop-shadow-[0_8px_10px_rgba(0,0,0,0.45)]" draggable={false} />
         ) : (
           <VehicleIcon id={id} color={paintById(color).hex} className="relative z-10 mb-3 h-12 w-24 animate-pulse" />
         )}
@@ -76,7 +76,7 @@ const ColorVariant = ({ vehicle, color, selected, onSelect }: { vehicle: Vehicle
       className={`flex w-[78px] shrink-0 flex-col items-center rounded-xl border-2 px-1 pt-1 pb-0.5 transition-all active:scale-95 tall:w-[100px] ${selected ? 'border-gold-400 bg-gold-500/10' : 'border-white/10 bg-night-900/60 hover:border-white/30'}`}
     >
       <div className="flex h-[34px] w-full items-center justify-center tall:h-[48px]">
-        {thumb ? <img src={thumb} alt="" className="max-h-full object-contain" draggable={false} /> : <span className="h-5 w-5 rounded-full" style={{ background: paint.hex }} />}
+        {thumb ? <img src={thumb} alt="" className="h-full w-full object-contain" draggable={false} /> : <span className="h-5 w-5 rounded-full" style={{ background: paint.hex }} />}
       </div>
       <span className="text-[10px] font-bold tracking-wider uppercase">{paint.name}</span>
     </button>

@@ -2,7 +2,7 @@
 # Static PWA (index.html + assets) and the Laravel API front controller (laravel-api.php).
 
 Options -Indexes -MultiViews
-DirectoryIndex index.html
+DirectoryIndex index.php
 AddDefaultCharset utf-8
 
 <IfModule mod_rewrite.c>
@@ -26,7 +26,7 @@ AddDefaultCharset utf-8
     #    The front controller is only reachable through /api/* (direct hits are refused).
     RewriteCond %{THE_REQUEST} ^\S+\s/+laravel-api\.php [NC]
     RewriteRule ^ - [F,L]
-    RewriteRule ^api(/.*)?$ laravel-api.php [L,QSA]
+    RewriteRule ^api(/.*)?$ index.php [L,QSA]
 
     # 5. Missing static files are real 404s (never index.html: a stale cached page must not get HTML as a module).
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -35,7 +35,7 @@ AddDefaultCharset utf-8
     # 6. Single-page app: unknown paths fall back to index.html (real files are served as is).
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ index.html [L]
+    RewriteRule ^ index.php [L]
 </IfModule>
 
 # Types for 3D / audio / PWA assets.

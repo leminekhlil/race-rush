@@ -11,6 +11,11 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
+if (! defined('RACE_RUSH_API_ENTRY')) {
+    http_response_code(403);
+    exit;
+}
+
 define('LARAVEL_START', microtime(true));
 
 $fail = static function (string $code, string $message): never {

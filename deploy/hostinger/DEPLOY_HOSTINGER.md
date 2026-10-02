@@ -10,9 +10,9 @@ le frontend est déjà buildé et les dépendances PHP de production sont inclus
 ```
 racerush-hostinger-<version>/
 ├── public_html/          ← CONTENU à copier DANS le public_html du domaine (racine web)
-│   ├── index.html, assets/, models/, env/, audio/, fonts/, app-icons/, sw.js, manifest.webmanifest
+│   ├── index.php, app-shell.html, assets/, models/, env/, audio/, fonts/, app-icons/, sw.js, manifest.webmanifest
 │   ├── config.js         ← configuration runtime (URL du serveur temps réel), modifiable sans rebuild
-│   ├── laravel-api.php   ← point d'entrée de l'API (/api/* y est redirigé par .htaccess)
+│   ├── laravel-api.php   ← contrôleur Laravel appelé par index.php pour /api/*
 │   ├── .htaccess         ← HTTPS, SPA, API, types MIME, cache, en-têtes de sécurité (fichier caché !)
 │   └── version.txt
 ├── racerush-app/         ← Application Laravel (API) : à placer À CÔTÉ de public_html, JAMAIS dedans
@@ -35,10 +35,9 @@ racerush-hostinger-<version>/
 
 - Le domaine pointe **directement sur `public_html/`** (configuration Hostinger par défaut). **Ne pas** faire pointer
   le domaine vers `racerush-app/public` : ce dossier n'existe pas dans le paquet, le point d'entrée est
-  `public_html/laravel-api.php`.
+  `public_html/index.php`.
 - `laravel-api.php` cherche l'application dans `../racerush-app` (recommandé). Si le Gestionnaire de fichiers ne
-  vous permet pas d'écrire à côté de `public_html`, il accepte aussi `public_html/racerush-app/` en secours : le
-  `.htaccess` racine et celui de `racerush-app` en bloquent alors l'accès HTTP (solution moins robuste).
+  vous permet pas d'écrire à côté de `public_html`, il accepte aussi `public_html/racerush-app/` en secours : configurer alors hPanel sur le sous-dossier public décrit dans la section HWS ci-dessous.
 
 ---
 
@@ -169,3 +168,29 @@ Même procédure ; si une nouvelle migration est livrée, l'appliquer par SSH :
 `cd ~/websites/gM8HrNatJ/racerush-app && php artisan migrate --force` (le paquet SQL ne sert qu'à une base vide).
 
 Support : lemine@pro.mr
+
+
+## Hostinger HWS : entrée PHP (correctif du 2 octobre 2026)
+
+HWS peut ignorer les règles Apache du `.htaccess`. Si `index.html` reste à la racine,
+les GET `/api/*` peuvent recevoir le HTML de la SPA et les POST un 405. Le paquet
+utilise désormais `index.php` comme seul index et conserve le frontend dans
+`app-shell.html`. `index.php` transmet les URI `/api/*` inchangées à Laravel et
+sert la SPA pour les autres pages. Ne pas remettre `index.html` à côté de
+`index.php`. Les appels du frontend restent `./api` ; aucun fallback par query
+string ni changement du bundle n'est nécessaire.
+
+Sur Apache/LiteSpeed, le `.htaccess` doit également cibler `index.php`. L'accès
+direct à `laravel-api.php` est refusé par PHP, même sans rewrite. Le service worker
+renouvelle ses caches et précharge la racine plutôt que `index.html`.
+
+Si le backend est dans `public_html/racerush-app` et que le parent du site est
+non inscriptible, mettre les seuls fichiers publics dans `public_html/public`,
+puis définir le Public directory de hPanel sur `public`. Le contrôleur trouve
+alors Laravel dans `../racerush-app`. Garder archives, sauvegardes, logs et `.env`
+hors de ce dossier public : les protections `.htaccess` ne suffisent pas sur HWS.
+
+Une fois le routage réparé, une erreur MySQL 1045 est un problème distinct :
+vérifier les identifiants `.env`, sans réimporter la base ni régénérer APP_KEY.
+Validation minimale : health/catalog 200 JSON, guest 201, `/me` authentifié 200,
+guest sans nom 422, contrôleur PHP direct 403 et backend/archives inaccessibles.

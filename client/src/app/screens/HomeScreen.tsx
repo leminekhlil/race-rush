@@ -300,6 +300,7 @@ export const HomeScreen = ({ onSettings }: { onSettings: () => void }) => {
             <div className="rounded-xl bg-night-950/60 py-1.5 pr-3 pl-12 text-xs font-semibold text-white/75 backdrop-blur-sm">
               <span className="text-gold-300">{VEHICLES[sel.vehicle].name}</span>
               {profile ? ` · Niv. ${profile.level} · ${profile.racesPlayed} courses` : ''}
+              {online && !multi && <span className="block text-gold-300">Multijoueur indisponible : serveur de course non configuré.</span>}
               {apiStatus === 'offline' && <span className="block text-gold-300">● Hors ligne — entraînement sans récompense</span>}
             </div>
           </>
