@@ -1,8 +1,19 @@
 # Race Rush — realtime server (optional, VPS)
 
-Hostinger **shared** hosting cannot keep a Node.js WebSocket process running. Multiplayer lobbies, server-validated
+The Race Rush **PHP/HWS deployment** does not run this persistent Node.js WebSocket server. Multiplayer lobbies, server-validated
 rewards (XP / v-MRU) and voice-chat signalling need this server. Until it is deployed, the site works in solo mode
-(offline races against bots, no rewards) and hides multiplayer / voice.
+(offline races against bots, no rewards) and disables multiplayer / voice.
+
+Hostinger now offers separate managed Node.js apps on Business and Cloud plans; lack of Node in the PHP SSH
+environment does not mean every Hostinger product lacks Node support. However, Node support alone is not enough:
+this server needs incoming HTTPS/WebSocket connections and a persistent process. Verify those capabilities for
+the exact product before configuring `realtimeUrl`. Hostinger's Web/Cloud connectivity documentation currently
+describes outgoing-only WebSockets. A VPS or a managed service explicitly supporting incoming WebSockets is
+the deployment option supported by this guide. Keep Laravel and the frontend on Hostinger.
+
+References (checked 2026-10-02):
+- https://www.hostinger.com/support/how-to-deploy-a-nodejs-website-in-hostinger/
+- https://www.hostinger.com/support/which-web-standards-and-connectivity-features-are-supported-at-hostinger/
 
 ## Requirements
 - Small VPS (1 vCPU / 1 GB is enough for a few lobbies), Node.js 20+, a sub-domain such as `rt.racerush.pro.mr`

@@ -116,8 +116,8 @@ Aucune tâche cron ni file d'attente n'est requise (`QUEUE_CONNECTION=sync`).
 
 ## 8. Temps réel, WebSocket, WebRTC — limitations de l'hébergement mutualisé
 
-- L'hébergement **mutualisé** Hostinger ne maintient pas de processus Node.js persistant ni de serveur
-  WebSocket. Le paquet est donc livré avec `config.js` → `realtimeUrl: ''` :
+- Ce déploiement **PHP/HWS** ne fournit pas le processus Node.js persistant ni les connexions WebSocket
+  entrantes nécessaires au serveur de course (voir `deploy/realtime/README.md` pour les autres offres). Le paquet est donc livré avec `config.js` → `realtimeUrl: ''` :
   - ✅ fonctionnent : jeu complet en solo (course contre 4 bots, City + Desert), garage 3D, achats/améliorations
     avec la monnaie virtuelle v-MRU (validés par l'API Laravel), comptes invités, audio, PWA/hors ligne ;
   - ⛔ désactivés proprement (message « bientôt disponibles ») : création/rejoindre une partie multijoueur,
