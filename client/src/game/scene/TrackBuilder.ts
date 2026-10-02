@@ -12,6 +12,7 @@ import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { createRng, type TrackPath } from '@race-rush/shared';
 import { extrudeAlongTrack, GeometryBatch } from './geometry';
+import { buildLandmarks, planLandmarks } from './landmarks';
 import {
   bannerTexture,
   barrierTexture,
@@ -297,16 +298,22 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
 
   // ---------- Decor ----------
   const rng = createRng(def.decorSeed);
+  const plan = planLandmarks(path);
   const clearOf = (x: number, z: number, radius: number): boolean => {
     const p = path.project(x, z);
     const h = path.baseHeight(p.s);
-    return Math.abs(p.lateral) > path.barrierOffset(p.s) + BARRIER_T + embankment(h) + radius + 1.5;
+    const lat = Math.abs(p.lateral);
+    if (lat <= path.barrierOffset(p.s) + BARRIER_T + embankment(h) + radius + 1.5) return false;
+    // Keep tunnel mountains / bridges / overpass clear of generic decor.
+    if (plan.skipRoadside(p.s) && lat < path.barrierOffset(p.s) + 22 + radius) return false;
+    return !plan.blocked(x, z, radius);
   };
 
   // Lamps / torches along the barriers.
   const lampMatrices: number[] = [];
   const lampSpacing = desert ? 46 : 30;
   for (let s = 5; s < path.length; s += lampSpacing / Math.max(0.5, decorDensity)) {
+    if (plan.skipRoadside(s)) continue;
     for (const side of [-1, 1]) {
       if (desert && side > 0) continue;
       const smp = path.sampleAt(s);
@@ -356,8 +363,8 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
     chev.thinInstanceSetBuffer('matrix', new Float32Array(chevMatrices), 16, true);
   }
 
-  buildBannersAndSigns(scene, path, desert);
-  buildPalms(scene, path, rng, clearOf, desert ? 0.25 * decorDensity : decorDensity);
+  buildBannersAndSigns(scene, path, desert, plan.skipRoadside);
+  if (!desert) buildPalms(scene, path, rng, clearOf, decorDensity);
   if (desert) buildDesertDecor(scene, path, rng, clearOf, decorDensity, minX, maxX, minZ, maxZ, animated);
   else buildCityDecor(scene, path, rng, clearOf, decorDensity, minX, maxX, minZ, maxZ, animated);
 
@@ -365,6 +372,7 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
   const boards = desert ? ['DUNE CANYON', 'RACE RUSH', 'v-MRU'] : ['RACE RUSH', 'BOOST!', 'v-MRU', 'PALM CITY'];
   let bi = 0;
   for (let s = 140; s < path.length - 60; s += 230) {
+    if (plan.skipRoadside(s)) continue;
     const smp = path.sampleAt(s);
     const side = bi % 2 ? 1 : -1;
     const off = (path.barrierOffset(s) + embankment(path.baseHeight(s)) + 5) * side;
@@ -388,6 +396,8 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number):
     legs.material = poleMesh.material;
     legs.freezeWorldMatrix();
   }
+
+  buildLandmarks(scene, path, decorDensity, animated);
 
   for (const m of scene.meshes) m.isPickable = false;
 
@@ -458,7 +468,7 @@ const buildCityDecor = (
 };
 
 /** Pink crown banners on poles + green overhead "RACE RUSH" signs (city) along the circuit. */
-const buildBannersAndSigns = (scene: Scene, path: TrackPath, desert: boolean) => {
+const buildBannersAndSigns = (scene: Scene, path: TrackPath, desert: boolean, skip: (s: number) => boolean) => {
   const bannerMat = new StandardMaterial('crownBannerMat', scene);
   bannerMat.diffuseTexture = crownBannerTexture(scene);
   bannerMat.emissiveColor = new Color3(0.45, 0.45, 0.45);
@@ -467,6 +477,7 @@ const buildBannersAndSigns = (scene: Scene, path: TrackPath, desert: boolean) =>
   const poleM: number[] = [];
   const flagM: number[] = [];
   const place = (s: number, side: number) => {
+    if (skip(s)) return;
     const smp = path.sampleAt(s);
     const off = (path.barrierOffset(s) + 1.1) * side;
     const y = path.baseHeight(s);
@@ -496,7 +507,8 @@ const buildBannersAndSigns = (scene: Scene, path: TrackPath, desert: boolean) =>
   signMat.disableLighting = true;
   const frame = new StandardMaterial('signFrameMat', scene);
   frame.diffuseColor = Color3.FromHexString('#8f969f');
-  for (const s of [path.length * 0.17, path.length * 0.58]) {
+  // The 17 % sign hangs on the elevated highway (landmarks); this one has its own gantry.
+  for (const s of [path.length * 0.58]) {
     const smp = path.sampleAt(s);
     const off = path.barrierOffset(s) + 0.8;
     const y0 = path.baseHeight(s);
