@@ -2,6 +2,7 @@ import { clamp, type VehicleTuning } from '@race-rush/shared';
 import { settingsStore } from '../../state/settings';
 import { assetUrl } from '../assets/assetUrl';
 import { createStore } from '../../state/store';
+import { AudioSessionCoordinator } from './AudioSession';
 
 /**
  * Web Audio mixer: master → (sfx bus, music bus, voice bus) → compressor.
@@ -43,6 +44,13 @@ class AudioEngineImpl {
   private unlocked = false;
   private duckLevel = 1;
   private silentEl: HTMLAudioElement | null = null;
+  private audioSession = new AudioSessionCoordinator(() =>
+    (navigator as Navigator & { audioSession?: { type: string } }).audioSession);
+
+  /** Reserve capture before requesting permission; release after stopping the tracks. */
+  acquireMicrophoneSession(): () => void {
+    return this.audioSession.acquireCapture();
+  }
 
   constructor() {
     if (typeof window === 'undefined') return;
@@ -105,12 +113,8 @@ class AudioEngineImpl {
     const ctx = this.ensure();
     if (!ctx) return;
     this.unlocked = true;
-    try {
-      const nav = navigator as Navigator & { audioSession?: { type: string } };
-      if (nav.audioSession) nav.audioSession.type = 'playback';
-    } catch {
-      /* not supported */
-    }
+    // Never override pending/active iOS capture with the playback-only category.
+    this.audioSession.refresh();
     if (!this.silentEl) {
       try {
         this.silentEl = new Audio(SILENT_WAV);

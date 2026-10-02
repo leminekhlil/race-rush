@@ -78,6 +78,8 @@ class VoiceChatImpl {
   private sender: Sender | null = null;
   private transport: VoiceTransport | null = null;
   private stream: MediaStream | null = null;
+  private releaseMicSession: (() => void) | null = null;
+  private micGeneration = 0;
   private localAnalyser: AnalyserNode | null = null;
   private localSource: MediaStreamAudioSourceNode | null = null;
   private selfLastLoud = 0;
@@ -164,6 +166,14 @@ class VoiceChatImpl {
     if (joinVoice && (!appStore.get().lobby || appStore.get().lobby?.solo || !this.sender?.id)) { this.enable(); return; }
     const gen = this.generation;
     voiceStore.set({ mic: 'requesting', error: null });
+    const micGen = ++this.micGeneration;
+    // WebKit rejects getUserMedia while audioSession is explicitly playback-only.
+    const releaseCapture = AudioEngine.acquireMicrophoneSession();
+    this.releaseMicSession = releaseCapture;
+    const release = () => {
+      releaseCapture();
+      if (this.releaseMicSession === releaseCapture) this.releaseMicSession = null;
+    };
     let stream: MediaStream;
     try {
       // Invoke getUserMedia on the original tap, before audio setup or voice signalling.
@@ -171,7 +181,8 @@ class VoiceChatImpl {
       if (joinVoice) this.enable();
       stream = await permission;
     } catch (err) {
-      if (gen !== this.generation) return;
+      release();
+      if (gen !== this.generation || micGen !== this.micGeneration) return;
       const { name, message: msg } = microphoneError(err);
       const mic: MicState = name === 'NotAllowedError' || name === 'SecurityError' ? 'denied'
         : name === 'NotFoundError' || name === 'OverconstrainedError' ? 'notfound'
@@ -180,8 +191,9 @@ class VoiceChatImpl {
       return;
     }
     // Voice disabled / lobby left while the permission prompt was open: release immediately.
-    if (gen !== this.generation || voiceStore.get().status === 'off' || voiceStore.get().status === 'unavailable') {
+    if (gen !== this.generation || micGen !== this.micGeneration || voiceStore.get().status === 'off' || voiceStore.get().status === 'unavailable') {
       stream.getTracks().forEach((track) => track.stop());
+      release();
       return;
     }
     this.stream = stream;
@@ -189,6 +201,7 @@ class VoiceChatImpl {
     if (!track) {
       stream.getTracks().forEach((t) => t.stop());
       this.stream = null;
+      release();
       voiceStore.set({ mic: 'notfound', error: 'Le navigateur n’a fourni aucune piste micro.' });
       return;
     }
@@ -375,9 +388,12 @@ class VoiceChatImpl {
   }
 
   private stopMic(): void {
+    this.micGeneration++;
     const stream = this.stream;
     this.stream = null;
     if (stream) stream.getTracks().forEach((track) => track.stop());
+    this.releaseMicSession?.();
+    this.releaseMicSession = null;
     this.transport?.setLocalTrack(null);
     try {
       this.localSource?.disconnect();

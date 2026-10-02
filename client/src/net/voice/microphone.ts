@@ -22,6 +22,6 @@ export function microphoneError(error: unknown): { name: string; message: string
   }
   if (name === 'NotFoundError' || name === 'OverconstrainedError') return { name, message: 'Aucun micro disponible sur cet appareil.' };
   if (name === 'NotReadableError' || name === 'AbortError') return { name, message: 'Micro indisponible. Ferme les autres applications qui utilisent le micro, puis réessaie.' };
-  if (name === 'InvalidStateError') return { name, message: 'Remets le jeu au premier plan, puis touche Micro pour demander l’autorisation.' };
+  if (name === 'InvalidStateError') return { name, message: 'Le navigateur ne peut pas démarrer la capture audio (InvalidStateError). Recharge le jeu, puis retouche Micro.' };
   return { name, message: `Le navigateur n’a pas ouvert le micro (${name}). Vérifie son accès au micro dans les réglages du téléphone. Sur iPhone, essaie aussi d’ouvrir racerush.pro.mr dans Safari.` };
 }

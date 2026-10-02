@@ -32,7 +32,7 @@ describe('native mobile microphone permission', () => {
     expect(microphoneError(error).message).toContain('Réglages');
   });
   it('shows an identifiable safe error instead of hiding the browser failure', () => {
-    expect(microphoneError({ name: 'InvalidStateError' }).message).toContain('premier plan');
+    expect(microphoneError({ name: 'InvalidStateError' }).message).toContain('InvalidStateError');
     expect(microphoneError({ name: 'TypeError' }).message).toContain('TypeError');
     expect(microphoneError({ name: '<private error text>' }).name).toBe('UnknownError');
   });
