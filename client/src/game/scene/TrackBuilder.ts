@@ -1,6 +1,7 @@
 import type { Scene } from '@babylonjs/core/scene';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import type { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
@@ -13,6 +14,7 @@ import '@babylonjs/core/Meshes/thinInstanceMesh';
 import { createRng, type TrackPath } from '@race-rush/shared';
 import { extrudeAlongTrack, GeometryBatch } from './geometry';
 import { buildLandmarks, planLandmarks } from './landmarks';
+import { buildRoadDetails } from './roadDetails';
 import { buildCity } from './city/CityBuilder';
 import { lightPoolTexture, nightSkyTexture } from './city/cityTextures';
 import { Constants } from '@babylonjs/core/Engines/constants';
@@ -25,6 +27,7 @@ import {
   curbTexture,
   groundTexture,
   rampTexture,
+  roadBumpTexture,
   roadSignTexture,
   roadTexture,
   skyTexture,
@@ -113,10 +116,18 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number, 
     },
     heights: () => [0.02, 0.02],
     us: [0, 1],
-    vLength: 24,
+    vLength: 36,
   });
-  const roadMat = mat(scene, 'roadMat', '#ffffff', { spec: desert ? 0.02 : 0.12 });
+  const roadMat = mat(scene, 'roadMat', '#ffffff', { spec: desert ? 0.02 : night ? 0.35 : 0.14 });
   roadMat.diffuseTexture = roadTexture(scene, pal.road, desert);
+  roadMat.specularPower = night ? 48 : 24;
+  if (decorDensity >= 0.8) {
+    const bump = roadBumpTexture(scene);
+    (bump as Texture).uScale = 6;
+    (bump as Texture).vScale = 40;
+    roadMat.bumpTexture = bump;
+    roadMat.bumpTexture.level = 0.35;
+  }
   const roadMesh = road.build('road', scene, roadMat, false);
   shadowReceivers.push(roadMesh);
 
@@ -426,6 +437,7 @@ export const buildTrack = (scene: Scene, path: TrackPath, decorDensity: number, 
   }
 
   buildLandmarks(scene, path, decorDensity, animated);
+  buildRoadDetails(scene, path, (ss) => path.barrierOffset(ss), plan.skipRoadside, desert);
 
   for (const m of scene.meshes) m.isPickable = false;
 

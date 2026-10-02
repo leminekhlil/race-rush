@@ -39,22 +39,168 @@ export const noise = (ctx: CanvasRenderingContext2D, w: number, h: number, base:
 
 /** Road surface: u spans the road width, v runs along the track. */
 export const roadTexture = (scene: Scene, base: string, desert: boolean) =>
-  make(scene, 'roadTex', 256, 512, (ctx, w, h) => {
-    noise(ctx, w, h, base, 0.18, 11, 5000);
+  make(scene, 'roadTex', 512, 1024, (ctx, w, h) => {
+    noise(ctx, w, h, base, 0.2, 11, 26000);
+    const rng = createRng(desert ? 3 : 17);
+    // Aggregate variation: darker / lighter blotches and repair patches.
+    for (let i = 0; i < 26; i++) {
+      const x = rng() * w;
+      const y = rng() * h;
+      const r = 20 + rng() * 70;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      const dark = rng() < 0.6;
+      g.addColorStop(0, dark ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.06)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    if (!desert) {
+      for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = 'rgba(20,22,26,0.28)';
+        ctx.fillRect(rng() * w * 0.7, rng() * h, 60 + rng() * 90, 40 + rng() * 80);
+      }
+      // Cracks.
+      ctx.strokeStyle = 'rgba(10,10,12,0.35)';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 7; i++) {
+        let x = rng() * w;
+        let y = rng() * h;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        for (let k = 0; k < 6; k++) {
+          x += (rng() - 0.5) * 30;
+          y += 8 + rng() * 18;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+    // Rubber laid down in the racing lines.
+    for (const cx of [w * 0.3, w * 0.7]) {
+      const g = ctx.createLinearGradient(cx - 34, 0, cx + 34, 0);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(0.5, 'rgba(0,0,0,0.2)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - 34, 0, 68, h);
+    }
+    // Skid marks.
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+    ctx.lineWidth = 7;
+    for (let i = 0; i < 4; i++) {
+      const x0 = w * (0.2 + rng() * 0.6);
+      const y0 = rng() * h * 0.8;
+      for (const dx of [0, 34]) {
+        ctx.beginPath();
+        ctx.moveTo(x0 + dx, y0);
+        ctx.bezierCurveTo(x0 + dx + 10, y0 + 60, x0 + dx - 20, y0 + 120, x0 + dx + 15, y0 + 190);
+        ctx.stroke();
+      }
+    }
     // Edge lines.
-    ctx.fillStyle = desert ? 'rgba(255,240,210,0.55)' : 'rgba(240,244,255,0.9)';
-    ctx.fillRect(8, 0, 7, h);
-    ctx.fillRect(w - 15, 0, 7, h);
+    ctx.fillStyle = desert ? 'rgba(255,240,210,0.55)' : 'rgba(240,244,255,0.92)';
+    ctx.fillRect(14, 0, 12, h);
+    ctx.fillRect(w - 26, 0, 12, h);
     // Lane dashes.
     ctx.fillStyle = desert ? 'rgba(255,230,190,0.45)' : 'rgba(255,214,64,0.95)';
-    for (const x of desert ? [w / 2 - 3] : [w / 3 - 2, (2 * w) / 3 - 2]) {
-      for (let y = 0; y < h; y += 128) ctx.fillRect(x, y + 20, 5, 64);
+    for (const x of desert ? [w / 2 - 5] : [w / 3 - 4, (2 * w) / 3 - 4]) {
+      for (let y = 0; y < h; y += 256) ctx.fillRect(x, y + 40, 9, 128);
     }
-    // Tire marks.
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.fillRect(w * 0.27, 0, 10, h);
-    ctx.fillRect(w * 0.7, 0, 10, h);
   });
+
+/** Grey-scale height map → used as a bump texture for the asphalt grain (STANDARD / HIGH). */
+export const roadBumpTexture = (scene: Scene) =>
+  make(scene, 'roadBump', 256, 256, (ctx, w, h) => {
+    ctx.fillStyle = 'rgb(128,128,255)';
+    ctx.fillRect(0, 0, w, h);
+    const rng = createRng(5);
+    for (let i = 0; i < 9000; i++) {
+      const x = rng() * w;
+      const y = rng() * h;
+      const nx = Math.floor(128 + (rng() - 0.5) * 120);
+      const ny = Math.floor(128 + (rng() - 0.5) * 120);
+      ctx.fillStyle = `rgb(${nx},${ny},255)`;
+      ctx.fillRect(x, y, 1 + rng() * 2, 1 + rng() * 2);
+    }
+  });
+
+/** Big white road chevrons painted before tight corners (pointing the turn direction). */
+export const roadArrowTexture = (scene: Scene) =>
+  make(
+    scene,
+    'roadArrow',
+    256,
+    256,
+    (ctx, w, h) => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(245,245,245,0.9)';
+      for (const off of [0, 70]) {
+        ctx.beginPath();
+        ctx.moveTo(40 + off, 40);
+        ctx.lineTo(110 + off, 128);
+        ctx.lineTo(40 + off, 216);
+        ctx.lineTo(70 + off, 216);
+        ctx.lineTo(140 + off, 128);
+        ctx.lineTo(70 + off, 40);
+        ctx.closePath();
+        ctx.fill();
+      }
+    },
+    { alpha: true, wrap: false },
+  );
+
+/** Braking-distance board (150 / 100 / 50). */
+export const brakeBoardTexture = (scene: Scene, n: number) =>
+  make(
+    scene,
+    `brakeBoard${n}`,
+    128,
+    128,
+    (ctx, w, h) => {
+      flipForPlane(ctx, h);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#e23b3b';
+      ctx.lineWidth = 12;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.fillStyle = '#111';
+      ctx.font = '900 56px "Russo One", Impact, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(n), w / 2, h / 2 + 3);
+    },
+    { wrap: false },
+  );
+
+/** Manhole cover / drain grate decal. */
+export const manholeTexture = (scene: Scene) =>
+  make(
+    scene,
+    'manhole',
+    128,
+    128,
+    (ctx, w, h) => {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#2a2c30';
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, w / 2 - 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#4a4e55';
+      ctx.lineWidth = 4;
+      for (let r = 14; r < w / 2 - 6; r += 12) {
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.moveTo(10, h / 2);
+      ctx.lineTo(w - 10, h / 2);
+      ctx.moveTo(w / 2, 10);
+      ctx.lineTo(w / 2, h - 10);
+      ctx.stroke();
+    },
+    { alpha: true, wrap: false },
+  );
 
 export const curbTexture = (scene: Scene) =>
   make(scene, 'curbTex', 32, 128, (ctx, w, h) => {
@@ -213,7 +359,7 @@ export const skyTexture = (scene: Scene, top: string, horizon: string, desert: b
       g.addColorStop(0, top);
       g.addColorStop(0.36, top);
       g.addColorStop(0.5, horizon);
-      g.addColorStop(0.53, desert ? '#f9dcae' : '#e8f4ff');
+      g.addColorStop(0.53, desert ? '#f9dcae' : '#b8dcfb');
       g.addColorStop(1, desert ? '#d9a35f' : '#9fb3c8');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);

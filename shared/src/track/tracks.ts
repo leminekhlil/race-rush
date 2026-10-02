@@ -43,8 +43,8 @@ export const CITY_TRACK: TrackDefinition = {
   // Sunny tropical city (start / HUD references): blue sky, red & white barriers, light sidewalks.
   palette: {
     sky: '#2f7fe6',
-    horizon: '#bfe3ff',
-    fog: '#cfe6fb',
+    horizon: '#8ec5f5',
+    fog: '#b7d6f2',
     ground: '#b9b4a6',
     road: '#454a54',
     shoulder: '#d8d9dd',

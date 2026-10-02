@@ -130,6 +130,8 @@ export class RaceSession {
   private shadow: ShadowGenerator | null = null;
   private sun!: DirectionalLight;
   private night = false;
+  private post: import('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline').DefaultRenderingPipeline | null = null;
+  private aberration = 0;
   private phase: RacePhase = 'loading';
   private acc = 0;
   private raceTime = 0;
@@ -206,7 +208,7 @@ export class RaceSession {
 
     this.effects = new Effects(scene, q.particleScale, desert);
     this.camera = new DynamicRaceCamera(scene, this.path, q.viewDistance);
-    setupPostFx(scene, this.camera.camera, q, night ? { exposure: 1.0, contrast: 1.2, bloomThreshold: 0.85, bloomWeight: 0.35, vignette: 2.2 } : { exposure: 1.08, contrast: 1.15, vignette: 1.4 });
+    this.post = setupPostFx(scene, this.camera.camera, q, night ? { exposure: 1.0, contrast: 1.2, bloomThreshold: 0.85, bloomWeight: 0.35, vignette: 2.2 } : { exposure: 1.08, contrast: 1.15, vignette: 1.4 });
 
     AudioEngine.ensure();
     await prepareVehicles(scene, this.config.grid.map((g) => g.vehicle));
@@ -718,6 +720,17 @@ export class RaceSession {
     const t = this.local.vehicle.tuning;
     const standings = this.computeStandings();
     const me = standings.find((r) => r.isLocal);
+    // Boost: brief chromatic aberration + stronger vignette (post FX profiles only).
+    if (this.post) {
+      const target = st.boosting ? 1 : 0;
+      this.aberration += (target - this.aberration) * 0.25;
+      const on = this.aberration > 0.02;
+      this.post.chromaticAberrationEnabled = on;
+      if (on) {
+        this.post.chromaticAberration.aberrationAmount = 28 * this.aberration;
+        this.post.chromaticAberration.radialIntensity = 1.2;
+      }
+    }
     hudStore.set({
       lap: this.local.tracker.lap,
       position: me?.position ?? 1,
