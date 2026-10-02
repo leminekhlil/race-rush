@@ -12,6 +12,9 @@ import { LobbyScreen } from './screens/LobbyScreen';
 import { GarageScreen } from './screens/GarageScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { SettingsModal } from './components/SettingsModal';
+import { IntroCinematic } from './components/IntroCinematic';
+import { MusicPlayer } from '../game/audio/MusicPlayer';
+import { SIGNATURE } from './brand';
 import { NoticeHost } from './components/ui';
 import { actions, currentSelection, getRealtime } from './actions';
 import { hideBackdrop, showBackdrop, showPodium, showShowcase } from './backdrop';
@@ -92,6 +95,25 @@ export const App = () => {
   const results = useStore(appStore, (s) => s.results);
   const profile = useStore(appStore, (s) => s.profile);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [intro, setIntro] = useState(() => new URLSearchParams(location.search).get('dev') !== '1' && new URLSearchParams(location.search).get('intro') !== '0');
+
+  // Background music: starts once audio is unlocked by a user gesture, follows the settings.
+  useEffect(() => {
+    let last = '';
+    const sync = () => {
+      const s = settingsStore.get();
+      const key = `${s.musicTrack}`;
+      if (key === last && MusicPlayer.isPlaying()) return;
+      last = key;
+      if (AudioEngine.ctx?.state === 'running') MusicPlayer.sync();
+    };
+    const offUnlock = AudioEngine.onUnlock(sync);
+    const offSettings = settingsStore.subscribe(sync);
+    return () => {
+      offUnlock();
+      offSettings();
+    };
+  }, []);
 
   useEffect(() => {
     if (!startDevRace()) void actions.boot();
@@ -175,6 +197,16 @@ export const App = () => {
           </div>
         )}
         <NoticeHost />
+        {screen !== 'race' && !intro && (
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 text-center text-[9px] tracking-wider text-white/45 sm:text-[10px]"
+            style={{ paddingBottom: 'calc(2px + var(--safe-b))' }}
+            data-testid="signature"
+          >
+            {SIGNATURE}
+          </div>
+        )}
+        {intro && <IntroCinematic onDone={() => setIntro(false)} />}
       </div>
     </ErrorBoundary>
   );

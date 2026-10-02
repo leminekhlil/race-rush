@@ -8,6 +8,7 @@ import { Button, Panel } from '../components/ui';
 import { RaceRushLogo } from '../components/Logo';
 import { CarIcon, CoinIcon, GearIcon, LinkIcon, PencilIcon, PersonIcon, PlayIcon, StatsIcon, UsersIcon } from '../components/icons';
 import { AudioEngine } from '../../game/audio/AudioEngine';
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from '../brand';
 
 const Onboarding = () => {
   const busy = useStore(appStore, (s) => s.busy);
@@ -304,7 +305,14 @@ export const HomeScreen = ({ onSettings }: { onSettings: () => void }) => {
         )}
       </div>
 
-      <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] tracking-wider whitespace-nowrap text-white/45 portrait:hidden">Race Rush MVP · Ing. Mohamed Lemine Khlil</div>
+      <a
+        href={SUPPORT_MAILTO}
+        className="pointer-events-auto absolute rounded-lg bg-night-950/55 px-2 py-1 text-[11px] font-semibold text-white/70 backdrop-blur-sm transition-colors hover:text-gold-300 portrait:hidden"
+        style={{ right: 'calc(14px + var(--safe-r))', bottom: 'calc(18px + var(--safe-b))' }}
+        data-testid="home-support"
+      >
+        Un problème ? {SUPPORT_EMAIL}
+      </a>
 
       {modal === 'join' && <JoinModal onClose={() => setModal(null)} />}
       {modal === 'rename' && <RenameModal current={name} onClose={() => setModal(null)} />}

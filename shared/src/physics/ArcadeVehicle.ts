@@ -53,6 +53,8 @@ export interface VehicleState {
   driftTime: number;
   steer: number;
   throttle: number;
+  /** Brake input of the last step (audio / brake lights). */
+  brake: number;
   s: number;
   lateral: number;
   trackIndex: number;
@@ -111,6 +113,7 @@ export class ArcadeVehicle {
       driftTime: 0,
       steer: 0,
       throttle: 0,
+      brake: 0,
       s: 0,
       lateral: 0,
       trackIndex: -1,
@@ -175,6 +178,7 @@ export class ArcadeVehicle {
     const t = this.tuning;
     const st = this.state;
     st.throttle = input.throttle;
+    st.brake = input.brake;
     st.ghostTime = Math.max(0, st.ghostTime - dt);
     this.wallCooldown -= dt;
 

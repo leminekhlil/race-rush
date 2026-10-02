@@ -6,6 +6,9 @@ import { api } from '../../net/api';
 import { actions } from '../actions';
 import { Button, Panel, SectionTitle } from './ui';
 import { getEngineHost } from '../../game/engine/EngineHost';
+import { MUSIC_TRACKS } from '../../game/audio/MusicPlayer';
+import { AudioEngine } from '../../game/audio/AudioEngine';
+import { SIGNATURE, SUPPORT_EMAIL, SUPPORT_MAILTO } from '../brand';
 
 const QUALITIES: { id: QualityProfile; label: string; hint: string }[] = [
   { id: 'auto', label: 'AUTO', hint: 'Adapté à ton appareil' },
@@ -13,6 +16,13 @@ const QUALITIES: { id: QualityProfile; label: string; hint: string }[] = [
   { id: 'standard', label: 'STANDARD', hint: 'Équilibré' },
   { id: 'high', label: 'HIGH', hint: 'Ombres, glow, détails' },
 ];
+
+const Slider = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
+  <label className="flex items-center justify-between gap-3 py-1">
+    <span className="font-semibold text-white/85">{label}</span>
+    <input type="range" min={0} max={1} step={0.05} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-40 accent-gold-500" />
+  </label>
+);
 
 const Toggle = ({ label, checked, onChange, testId }: { label: string; checked: boolean; onChange: (v: boolean) => void; testId?: string }) => (
   <label className="flex cursor-pointer items-center justify-between gap-3 py-1.5">
@@ -68,10 +78,33 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
         <Toggle label="Accélération automatique (mobile)" checked={s.autoAccelerate} onChange={(v) => settingsStore.set({ autoAccelerate: v })} testId="toggle-autoaccel" />
         <Toggle label="Vibrations" checked={s.haptics} onChange={(v) => settingsStore.set({ haptics: v })} />
         <Toggle label="Afficher les FPS" checked={s.showFps} onChange={(v) => settingsStore.set({ showFps: v })} />
-        <label className="flex items-center justify-between gap-3 py-1.5">
-          <span className="font-semibold text-white/85">Volume</span>
-          <input type="range" min={0} max={1} step={0.05} value={s.masterVolume} onChange={(e) => settingsStore.set({ masterVolume: Number(e.target.value) })} className="w-40 accent-gold-500" />
-        </label>
+        <SectionTitle className="mt-4">Ambiance</SectionTitle>
+        <Toggle label="Ville de nuit (néons, fenêtres éclairées)" checked={s.timeOfDay === 'night'} onChange={(v) => settingsStore.set({ timeOfDay: v ? 'night' : 'day' })} testId="toggle-night" />
+        <Toggle label="Voix de l'annonceur et des rivaux" checked={s.announcer} onChange={(v) => settingsStore.set({ announcer: v })} testId="toggle-announcer" />
+
+        <SectionTitle className="mt-4">Son & musique</SectionTitle>
+        <Slider label="Volume général" value={s.masterVolume} onChange={(v) => settingsStore.set({ masterVolume: v })} />
+        <Slider label="Effets (moteurs, freins…)" value={s.sfxVolume} onChange={(v) => settingsStore.set({ sfxVolume: v })} />
+        <Slider label="Musique" value={s.musicVolume} onChange={(v) => settingsStore.set({ musicVolume: v })} />
+        <div className="mt-1 grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Musique de fond" data-testid="music-list">
+          {[{ id: 'shuffle', title: 'Aléatoire', mood: 'Toute la playlist' }, ...MUSIC_TRACKS, { id: 'off', title: 'Aucune', mood: 'Silence' }].map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="radio"
+              aria-checked={s.musicTrack === t.id}
+              data-testid={`music-${t.id}`}
+              onClick={() => {
+                AudioEngine.ensure();
+                settingsStore.set({ musicTrack: t.id });
+              }}
+              className={`rounded-xl px-2 py-1.5 text-left transition-all active:scale-95 ${s.musicTrack === t.id ? 'bg-gold-500 text-night-950' : 'bg-night-950/55 hover:bg-night-800'}`}
+            >
+              <div className="text-sm font-bold">♪ {t.title}</div>
+              <div className={`text-[11px] ${s.musicTrack === t.id ? 'text-night-950/70' : 'text-white/55'}`}>{t.mood}</div>
+            </button>
+          ))}
+        </div>
 
         {profile && (
           <>
@@ -100,7 +133,15 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
           <li>R — se replacer</li>
           <li>Échap — pause</li>
         </ul>
-        <p className="mt-4 text-xs leading-relaxed text-white/40">Race Rush MVP — Author: Ing. Mohamed Lemine Khlil. v-MRU est une monnaie virtuelle de jeu, sans valeur monétaire.</p>
+        <SectionTitle className="mt-4">Aide</SectionTitle>
+        <p className="text-sm leading-relaxed text-white/75">
+          En cas de problème, contactez :{' '}
+          <a href={SUPPORT_MAILTO} className="font-bold text-gold-300 underline-offset-2 hover:underline" data-testid="support-email">
+            {SUPPORT_EMAIL}
+          </a>
+        </p>
+        <p className="mt-4 text-xs leading-relaxed text-white/45">{SIGNATURE}</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/40">Race Rush — par Zahra Khlil. v-MRU est une monnaie virtuelle de jeu, sans valeur monétaire. Crédits des assets : docs/CREDITS.md.</p>
       </Panel>
     </div>
   );

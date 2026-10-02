@@ -8,6 +8,8 @@ import { GlowLayer } from '@babylonjs/core/Layers/glowLayer';
 import { SpotLight } from '@babylonjs/core/Lights/spotLight';
 import { setupPostFx } from '../render/postFx';
 import { setupAtmosphere } from '../render/atmosphere';
+import { Announcer } from '../audio/Announcer';
+import { MusicPlayer } from '../audio/MusicPlayer';
 import '@babylonjs/core/Layers/effectLayerSceneComponent';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
@@ -130,6 +132,7 @@ export class RaceSession {
   private shadow: ShadowGenerator | null = null;
   private sun!: DirectionalLight;
   private night = false;
+  private lastPosition = 99;
   private post: import('@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline').DefaultRenderingPipeline | null = null;
   private aberration = 0;
   private phase: RacePhase = 'loading';
@@ -179,6 +182,7 @@ export class RaceSession {
     await loadFonts();
     await nextFrame();
 
+    MusicPlayer.setDuck(0.6);
     const atmo = setupAtmosphere(scene, this.path, q);
     const night = atmo.night;
     this.night = night;
@@ -211,7 +215,7 @@ export class RaceSession {
     this.post = setupPostFx(scene, this.camera.camera, q, night ? { exposure: 1.0, contrast: 1.2, bloomThreshold: 0.85, bloomWeight: 0.35, vignette: 2.2 } : { exposure: 1.08, contrast: 1.15, vignette: 1.4 });
 
     AudioEngine.ensure();
-    await prepareVehicles(scene, this.config.grid.map((g) => g.vehicle));
+    await Promise.all([prepareVehicles(scene, this.config.grid.map((g) => g.vehicle)), AudioEngine.ensure() ? AudioEngine.preload() : Promise.resolve()]);
     for (const entry of this.config.grid) {
       const isLocal = entry.id === this.config.localId;
       const model = createVehicleModel(scene, entry.vehicle, entry.color, `${entry.slot}`);
@@ -381,6 +385,7 @@ export class RaceSession {
           this.lastCountdownShown = show;
           hudStore.set({ countdown: show });
           AudioEngine.countdown(show === 'GO');
+          Announcer.countdown(show);
           this.setStartLights(show);
           if (show === 'GO') {
             haptic(60);
@@ -499,6 +504,7 @@ export class RaceSession {
           if (e.type === 'lap' && e.lap < this.config.laps) {
             AudioEngine.lap();
             this.toast(e.lap === this.config.laps - 1 ? 'DERNIER TOUR !' : `TOUR ${e.lap + 1} / ${this.config.laps}`, 'good');
+            Announcer.lap(e.lap + 1, this.config.laps);
             hudStore.set({ lastLap: e.lapTime, bestLap: r.tracker.bestLap });
           }
           if (e.type === 'finish') this.onLocalFinish(e.time);
@@ -552,6 +558,8 @@ export class RaceSession {
   private onLocalFinish(time: number): void {
     this.local.finishedAt = time;
     AudioEngine.finish();
+    const pos = this.lastPosition;
+    window.setTimeout(() => Announcer.finish(pos), 400);
     haptic([60, 40, 120]);
     this.camera.setMode('finish');
     this.setPhase('finished');
@@ -682,7 +690,7 @@ export class RaceSession {
       );
       const dust = (s.offroad || this.path.def.theme === 'desert') && s.grounded ? clamp(Math.abs(s.speed) / 50, 0, 1) * (r.info.vehicle === 'buggy' ? 1.4 : 0.8) : 0;
       r.emitters.update({ drifting: s.drifting && s.grounded, boosting: s.boosting, dust, speed: Math.abs(s.speed), throttle: s.throttle });
-      r.audio?.update({ rpm: s.rpm, throttle: s.throttle, speed: Math.abs(s.speed), drifting: s.drifting && s.grounded, boosting: s.boosting, offroad: s.offroad, x: s.x, y: s.y, z: s.z });
+      r.audio?.update({ rpm: s.rpm, throttle: s.throttle, brake: s.brake, speed: Math.abs(s.speed), drifting: s.drifting && s.grounded, boosting: s.boosting, offroad: s.offroad, x: s.x, y: s.y, z: s.z });
     }
     for (const rr of this.remotes.values()) {
       const p = rr.pose;
@@ -731,6 +739,18 @@ export class RaceSession {
         this.post.chromaticAberration.radialIntensity = 1.2;
       }
     }
+    // Position changes: announcer when taking the lead, rival radio chatter on overtakes.
+    const position = me?.position ?? 1;
+    if (this.phase === 'racing' && this.lastPosition !== position && this.raceTime > 4) {
+      const now = performance.now();
+      if (position === 1 && this.lastPosition > 1) Announcer.lead();
+      else {
+        const rivalRow = standings.find((r) => r.position === (position > this.lastPosition ? position - 1 : position + 1));
+        const line = rivalRow && !rivalRow.isLocal ? Announcer.rival(rivalRow.name, position > this.lastPosition, now) : null;
+        if (line) this.toast(line, 'info');
+      }
+    }
+    this.lastPosition = position;
     hudStore.set({
       lap: this.local.tracker.lap,
       position: me?.position ?? 1,
@@ -827,6 +847,7 @@ export class RaceSession {
   }
 
   dispose(): void {
+    MusicPlayer.setDuck(1);
     this.disposed = true;
     this.input.detach();
     this.host.unmount(this.scene);
