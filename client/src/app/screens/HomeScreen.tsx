@@ -272,7 +272,8 @@ export const HomeScreen = ({ onSettings }: { onSettings: () => void }) => {
 
       {/* Logo */}
       <div className="absolute left-1/2 w-[min(32vw,290px)] -translate-x-[45%] tall:w-[min(44vw,520px)] tall:-translate-x-[62%] portrait:top-[9%] portrait:w-[78vw] portrait:-translate-x-1/2" style={{ top: 'calc(8px + var(--safe-t))' }}>
-        <RaceRushLogo className="h-auto w-full drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]" />
+        <RaceRushLogo title="Race Rush beta" className="h-auto w-full drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]" />
+        <div className="text-center font-display text-xs tracking-[0.25em] text-gold-300">BETA</div>
       </div>
 
       {/* Left column (landscape) / bottom (portrait): main actions */}

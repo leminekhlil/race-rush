@@ -769,6 +769,15 @@ export class RaceSession {
   }
 
   private computeStandings(): StandingRow[] {
+    if (this.config.mode === 'online' && this.serverStandings) {
+      const grid = new Map([this.local.info, ...[...this.remotes.values()].map((r) => r.info)].map((entry) => [entry.id, entry]));
+      return [...this.serverStandings].sort((a, b) => a.position - b.position).flatMap((row) => {
+        const info = grid.get(row.id);
+        return info ? [{ id: row.id, name: info.name, position: row.position,
+          isLocal: row.id === this.config.localId, isBot: info.isBot, finished: row.finished,
+          time: row.time, lap: row.lap, color: paintById(info.color).hex, vehicle: info.vehicle }] : [];
+      });
+    }
     const rows: { id: string; progress: number; finished: boolean; finishTime: number | null; info: GridEntry; lap: number; serverPos?: number }[] = [];
     for (const r of [this.local, ...this.bots]) {
       rows.push({ id: r.info.id, progress: r.tracker.progress, finished: r.finishedAt !== null, finishTime: r.finishedAt, info: r.info, lap: r.tracker.lap });

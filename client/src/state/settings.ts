@@ -4,6 +4,7 @@ export type QualityProfile = 'auto' | 'eco' | 'standard' | 'high';
 
 export interface Settings {
   quality: QualityProfile;
+  qualityDefaultVersion: number;
   autoAccelerate: boolean;
   masterVolume: number;
   haptics: boolean;
@@ -32,7 +33,8 @@ const isTouchDevice = (): boolean =>
   typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
 const defaults = (): Settings => ({
-  quality: 'auto',
+  quality: 'high',
+  qualityDefaultVersion: 1,
   autoAccelerate: isTouchDevice(),
   masterVolume: 0.8,
   haptics: true,
@@ -53,7 +55,11 @@ const load = (): Settings => {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return defaults();
-    return { ...defaults(), ...(JSON.parse(raw) as Partial<Settings>) };
+    const saved = JSON.parse(raw) as Partial<Settings>;
+    const quality = !saved.qualityDefaultVersion && saved.quality === 'auto' ? 'high' : saved.quality ?? 'high';
+    const loaded = { ...defaults(), ...saved, quality, qualityDefaultVersion: 1 };
+    localStorage.setItem(KEY, JSON.stringify(loaded));
+    return loaded;
   } catch {
     return defaults();
   }

@@ -38,3 +38,35 @@ export const checkMovement = (
 export const minimumLapTime = (path: TrackPath, vehicle: VehicleId): number => (path.length / absoluteMaxSpeed(vehicle)) * 0.92;
 
 export const isFiniteNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+/** Measures sustained speed over a server-clock window, rather than packet arrival gaps. */
+export class MovementWindow {
+  private startedAt: number | null = null;
+  private distance = 0;
+
+  reset(): void {
+    this.startedAt = null;
+    this.distance = 0;
+  }
+
+  check(vehicle: VehicleId, prev: { x: number; z: number; t: number }, next: { x: number; z: number; t: number }): Anomaly | null {
+    const instant = checkMovement(vehicle, prev, next);
+    if (instant?.kind === 'teleport') {
+      this.reset();
+      return instant;
+    }
+    this.startedAt ??= prev.t;
+    this.distance += Math.hypot(next.x - prev.x, next.z - prev.z);
+    const elapsed = (next.t - this.startedAt) / 1000;
+    if (elapsed < 1) return null;
+    const distance = this.distance;
+    this.startedAt = next.t;
+    this.distance = 0;
+    const limit = absoluteMaxSpeed(vehicle) * SPEED_TOLERANCE + SPEED_SLACK;
+    // A bounded 150ms allowance absorbs packets crossing a window boundary.
+    if (distance > limit * (elapsed + 0.15)) {
+      return { kind: 'speed', detail: `${(distance / elapsed).toFixed(1)} m/s over ${elapsed.toFixed(2)}s > ${limit.toFixed(1)}`, at: next.t };
+    }
+    return null;
+  }
+}

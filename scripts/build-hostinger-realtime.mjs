@@ -13,7 +13,7 @@ execFileSync(resolve(root, 'node_modules/.bin/esbuild'), [
 ], { cwd: root, stdio: 'inherit' });
 await copyFile(resolve(root, 'deploy/realtime/hostinger/server.js'), resolve(out, 'server.js'));
 await writeFile(resolve(out, 'package.json'), JSON.stringify({
-  name: 'racerush-realtime-hostinger', version: '0.9.1', private: true, type: 'commonjs',
+  name: 'racerush-realtime-hostinger', version: '0.9.2-beta.1', private: true, type: 'commonjs',
   scripts: { start: 'node server.js' }, engines: { node: '>=20' }, dependencies: { ws: '8.18.3' },
 }, null, 2) + '\n');
 console.log(`Hostinger package ready: ${out}`);

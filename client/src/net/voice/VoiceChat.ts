@@ -1,3 +1,4 @@
+import { openMicrophone } from './microphone';
 import type { ClientMessage, IceServerDTO, LobbyDTO, VoiceSignal } from '@race-rush/shared';
 import { createStore } from '../../state/store';
 import { appStore } from '../../state/appStore';
@@ -164,10 +165,7 @@ class VoiceChatImpl {
     voiceStore.set({ mic: 'requesting', error: null });
     let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
-        video: false,
-      });
+      stream = await openMicrophone(navigator.mediaDevices);
     } catch (err) {
       if (gen !== this.generation) return;
       const name = (err as DOMException)?.name ?? '';

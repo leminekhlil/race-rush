@@ -4,7 +4,7 @@ import {
   AutoPilot,
   botPace,
   botSkill,
-  checkMovement,
+  MovementWindow,
   COUNTDOWN_MS,
   FINISH_GRACE_MS,
   FLAG_AIR,
@@ -47,6 +47,7 @@ interface Racer {
   anomalies: Anomaly[];
   flagged: boolean;
   speedStrikes: number;
+  movement: MovementWindow;
   respawnPending: boolean;
   stateCount: number;
 }
@@ -104,6 +105,7 @@ export class RaceRoom {
         anomalies: [],
         flagged: false,
         speedStrikes: 0,
+        movement: new MovementWindow(),
         respawnPending: false,
         stateCount: 0,
       });
@@ -188,10 +190,11 @@ export class RaceRoom {
     if (r.respawnPending) {
       // A declared respawn may jump back to the last validated checkpoint area only.
       r.respawnPending = false;
+      r.movement.reset();
       const anchor = this.path.pointAt(r.tracker.lastCheckpointS() + 6, 0);
       if (Math.hypot(anchor.x - next.x, anchor.z - next.z) > 30) this.anomaly(r, { kind: 'teleport', detail: 'respawn far from checkpoint', at: now }, true);
     } else {
-      const a = checkMovement(r.entry.vehicle, r.state, next);
+      const a = r.movement.check(r.entry.vehicle, r.state, next);
       if (a) {
         if (a.kind === 'teleport') this.anomaly(r, a, true);
         else if (++r.speedStrikes >= 5) this.anomaly(r, a, true);

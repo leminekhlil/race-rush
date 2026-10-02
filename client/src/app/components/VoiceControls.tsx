@@ -95,7 +95,7 @@ export const VoicePanel = () => {
           {v.error ?? 'Voice chat indisponible sur ce navigateur.'}
         </p>
       )}
-      <p className="text-[10px] leading-relaxed text-white/45">Le micro ne s’ouvre que sur ton action et seulement pour ce salon. Casque conseillé.</p>
+      <p className="text-[10px] leading-relaxed text-white/45">Sur téléphone, touche Micro puis autorise le micro de ton appareil. Aucun casque nécessaire. Le micro reste limité à ce salon.</p>
     </section>
   );
 };
