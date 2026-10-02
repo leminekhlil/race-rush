@@ -272,7 +272,8 @@ export const HomeScreen = ({ onSettings }: { onSettings: () => void }) => {
 
       {/* Logo */}
       <div className="absolute left-1/2 w-[min(32vw,290px)] -translate-x-[45%] tall:w-[min(44vw,520px)] tall:-translate-x-[62%] portrait:top-[9%] portrait:w-[78vw] portrait:-translate-x-1/2" style={{ top: 'calc(8px + var(--safe-t))' }}>
-        <RaceRushLogo className="h-auto w-full drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]" />
+        <RaceRushLogo title="Race Rush beta" className="h-auto w-full drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]" />
+        <div className="text-center font-display text-xs tracking-[0.25em] text-gold-300">BETA</div>
       </div>
 
       {/* Left column (landscape) / bottom (portrait): main actions */}
@@ -300,6 +301,7 @@ export const HomeScreen = ({ onSettings }: { onSettings: () => void }) => {
             <div className="rounded-xl bg-night-950/60 py-1.5 pr-3 pl-12 text-xs font-semibold text-white/75 backdrop-blur-sm">
               <span className="text-gold-300">{VEHICLES[sel.vehicle].name}</span>
               {profile ? ` · Niv. ${profile.level} · ${profile.racesPlayed} courses` : ''}
+              {online && !multi && <span className="block text-gold-300">Multijoueur indisponible : serveur de course non configuré.</span>}
               {apiStatus === 'offline' && <span className="block text-gold-300">● Hors ligne — entraînement sans récompense</span>}
             </div>
           </>

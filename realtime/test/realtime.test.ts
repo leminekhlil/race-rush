@@ -66,7 +66,7 @@ class TestClient {
 }
 
 /** Drives a car with the shared simulation (exactly like the browser) and streams positions. */
-const drive = (c: TestClient, grid: GridEntry[], trackId: string, startAt: number, opts: { cheatAfterMs?: number } = {}) => {
+const drive = (c: TestClient, grid: GridEntry[], trackId: string, startAt: number, opts: { cheatAfterMs?: number; jitter?: boolean } = {}) => {
   const me = grid.find((g) => g.id === c.id)!;
   const path = getTrackPath(trackId);
   const slot = gridSlot(path, me.slot);
@@ -97,7 +97,10 @@ const drive = (c: TestClient, grid: GridEntry[], trackId: string, startAt: numbe
         x = p.x;
         z = p.z;
       }
-      c.send({ t: 'race.state', seq: seq++, x, y: st.y, z, h: st.heading, v: st.speed, f: 0 });
+      const message: ClientMessage = { t: 'race.state', seq: seq++, x, y: st.y, z, h: st.heading, v: st.speed, f: 0 };
+      // Deliver three consecutive legal positions in a compressed mobile-network burst.
+      if (opts.jitter) setTimeout(() => { if (c.ws.readyState === WebSocket.OPEN) c.send(message); }, [160, 90, 20][(seq - 1) % 3]);
+      else c.send(message);
     }
   }, 1000 / 60);
   return () => clearInterval(timer);
@@ -177,7 +180,7 @@ describe('realtime race', () => {
       const cd = (await a.wait((m) => m.t === 'race.countdown')) as Extract<ServerMessage, { t: 'race.countdown' }>;
       expect(cd.startAt).toBeGreaterThan(cd.serverTime);
 
-      const stopA = drive(a, load.grid, 'city', cd.startAt);
+      const stopA = drive(a, load.grid, 'city', cd.startAt, { jitter: true });
       const stopB = drive(b, load.grid, 'city', cd.startAt, { cheatAfterMs: 8000 });
       const snap = (await a.wait((m) => m.t === 'race.snapshot', 10000)) as Extract<ServerMessage, { t: 'race.snapshot' }>;
       expect(snap.r).toHaveLength(5);

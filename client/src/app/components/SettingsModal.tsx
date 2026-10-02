@@ -154,7 +154,7 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
           </a>
         </p>
         <p className="mt-4 text-xs leading-relaxed text-white/45">{SIGNATURE}</p>
-        <p className="mt-1 text-xs leading-relaxed text-white/40">Race Rush — par Zahra Khlil. v-MRU est une monnaie virtuelle de jeu, sans valeur monétaire. Crédits des assets : docs/CREDITS.md.</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/40">Race Rush beta — par Zahra Khlil. v-MRU est une monnaie virtuelle de jeu, sans valeur monétaire. Crédits des assets : docs/CREDITS.md.</p>
       </Panel>
     </div>
   );

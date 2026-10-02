@@ -48,7 +48,12 @@ const ensureScene = () => {
 
 /** Renders meshes through a render target, reads pixels back and encodes a PNG (no extra post-process shader). */
 const renderToDataUrl = async (s: Scene, meshes: import('@babylonjs/core/Meshes/abstractMesh').AbstractMesh[], width: number, height: number): Promise<string> => {
-  const rtt = new RenderTargetTexture('thumbRtt', { width, height }, s, false, true, Constants.TEXTURETYPE_UNSIGNED_BYTE);
+  // Use the thumbnail dimensions for projection, not the game's screen aspect ratio.
+  const rtt = new RenderTargetTexture('thumbRtt', { width, height }, s, {
+    generateMipMaps: false,
+    doNotChangeAspectRatio: false,
+    type: Constants.TEXTURETYPE_UNSIGNED_BYTE,
+  });
   rtt.samples = 4;
   rtt.activeCamera = camera;
   rtt.renderList = meshes.filter((m) => m.isEnabled());

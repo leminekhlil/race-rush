@@ -28,6 +28,9 @@ step "1/6 Frontend production build → public_html/"
 (cd "$ROOT/client" && npx vite build --outDir "$STAGE/public_html" --emptyOutDir >/dev/null)
 cp "$ROOT/deploy/hostinger/public_html.htaccess" "$STAGE/public_html/.htaccess"
 cp "$ROOT/deploy/hostinger/laravel-api.php" "$STAGE/public_html/laravel-api.php"
+# PHP must be the sole index file: Hostinger HWS then sends unknown URLs to PHP.
+mv "$STAGE/public_html/index.html" "$STAGE/public_html/app-shell.html"
+cp "$ROOT/deploy/hostinger/index.php" "$STAGE/public_html/index.php"
 # No realtime server on shared hosting: solo races run offline, multiplayer/voice are hidden until configured.
 sed -i "s#realtimeUrl: 'auto'#realtimeUrl: ''#" "$STAGE/public_html/config.js"
 grep -q "realtimeUrl: ''" "$STAGE/public_html/config.js"

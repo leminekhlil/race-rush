@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkMovement, getTrackPath, LapTracker, minimumLapTime, rankRacers } from '../src';
+import { MovementWindow, checkMovement, getTrackPath, LapTracker, minimumLapTime, rankRacers } from '../src';
 
 const path = getTrackPath('city');
 const L = path.length;
@@ -85,5 +85,34 @@ describe('anti-cheat movement checks', () => {
     const min = minimumLapTime(path, 'sport');
     expect(min).toBeGreaterThan(14);
     expect(min).toBeLessThan(25);
+  });
+});
+
+
+describe('mobile network movement windows', () => {
+  it('accepts legal speed when packets arrive in compressed bursts', () => {
+    const window = new MovementWindow();
+    let prev = { x: 0, z: 0, t: 0 };
+    let instantSpeedAlerts = 0;
+    for (let i = 1; i <= 90; i++) {
+      const next = { x: i * 5.94, z: 0, t: prev.t + [194, 2, 2][(i - 1) % 3] };
+      if (checkMovement('sport', prev, next)?.kind === 'speed') instantSpeedAlerts++;
+      expect(window.check('sport', prev, next)).toBeNull();
+      prev = next;
+    }
+    expect(instantSpeedAlerts).toBeGreaterThan(5);
+  });
+
+  it('still rejects sustained excessive speed and immediate teleports', () => {
+    const window = new MovementWindow();
+    let prev = { x: 0, z: 0, t: 0 };
+    let alerts = 0;
+    for (let i = 1; i <= 100; i++) {
+      const next = { x: i * 10, z: 0, t: i * 33 };
+      if (window.check('sport', prev, next)?.kind === 'speed') alerts++;
+      prev = next;
+    }
+    expect(alerts).toBeGreaterThan(0);
+    expect(window.check('sport', prev, { x: prev.x + 300, z: 0, t: prev.t + 66 })?.kind).toBe('teleport');
   });
 });
