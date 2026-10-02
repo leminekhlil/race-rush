@@ -27,7 +27,7 @@ export const IntroCinematic = ({ onDone }: { onDone: () => void }) => {
     onDone();
   };
   const skip = () => {
-    AudioEngine.ensure();
+    AudioEngine.unlock();
     finish();
   };
 

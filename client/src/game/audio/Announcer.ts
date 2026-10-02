@@ -43,7 +43,7 @@ class AnnouncerImpl {
   }
 
   private get enabled(): boolean {
-    return typeof window !== 'undefined' && 'speechSynthesis' in window && settingsStore.get().announcer && settingsStore.get().sfxVolume > 0.02;
+    return typeof window !== 'undefined' && 'speechSynthesis' in window && settingsStore.get().announcer && !settingsStore.get().muted && settingsStore.get().sfxVolume > 0.02;
   }
 
   say(text: string, priority: Priority = 1, pitch = 1, rate = 1.08): void {

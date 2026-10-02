@@ -8,6 +8,7 @@ import { RaceHud } from '../components/RaceHud';
 import { TouchControls } from '../components/TouchControls';
 import { appStore, goTo } from '../../state/appStore';
 import { netBridge } from '../../net/raceBridge';
+import { SoundChip } from '../components/SoundChip';
 
 declare global {
   interface Window {
@@ -39,6 +40,9 @@ const PauseMenu = ({ session, onQuit }: { session: RaceSession; onQuit: () => vo
         <button type="button" className="btn-volt font-display rounded-2xl py-3 text-lg" onClick={onQuit}>
           QUITTER LA COURSE
         </button>
+      </div>
+      <div className="mt-4 flex justify-center">
+        <SoundChip />
       </div>
     </div>
   </div>

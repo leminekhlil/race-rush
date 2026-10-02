@@ -19,6 +19,7 @@ import { NoticeHost } from './components/ui';
 import { actions, currentSelection, getRealtime } from './actions';
 import { hideBackdrop, showBackdrop, showPodium, showShowcase } from './backdrop';
 import { AudioEngine } from '../game/audio/AudioEngine';
+import { SoundChip } from './components/SoundChip';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   override state = { error: null as Error | null };
@@ -117,10 +118,7 @@ export const App = () => {
 
   useEffect(() => {
     if (!startDevRace()) void actions.boot();
-    // Mobile browsers only allow audio after a user gesture.
-    const unlock = () => AudioEngine.ensure();
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
+    // Audio unlock on the first user gesture is handled globally by AudioEngine (capture listeners).
   }, []);
 
   // 3D backdrop lifecycle: circuit showcase (home/play/lobby), workshop (garage/select), podium (results).
@@ -197,6 +195,11 @@ export const App = () => {
           </div>
         )}
         <NoticeHost />
+        {!intro && screen !== 'race' && screen !== 'boot' && (
+          <div className="pointer-events-none absolute z-20" style={{ left: 'calc(12px + var(--safe-l, 0px))', bottom: 'calc(22px + var(--safe-b))' }}>
+            <SoundChip compact />
+          </div>
+        )}
         {screen !== 'race' && !intro && (
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 z-10 text-center text-[9px] tracking-wider text-white/45 sm:text-[10px]"

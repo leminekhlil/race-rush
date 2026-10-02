@@ -14,7 +14,7 @@ const Onboarding = () => {
   const busy = useStore(appStore, (s) => s.busy);
   const [name, setName] = useState(settingsStore.get().playerName || '');
   const submit = async () => {
-    AudioEngine.ensure();
+    AudioEngine.unlock();
     await actions.createProfile(name);
   };
   return (

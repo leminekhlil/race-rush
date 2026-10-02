@@ -17,10 +17,20 @@ const QUALITIES: { id: QualityProfile; label: string; hint: string }[] = [
   { id: 'high', label: 'HIGH', hint: 'Ombres, glow, détails' },
 ];
 
-const Slider = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
+const Slider = ({ label, value, onChange, testId }: { label: string; value: number; onChange: (v: number) => void; testId?: string }) => (
   <label className="flex items-center justify-between gap-3 py-1">
     <span className="font-semibold text-white/85">{label}</span>
-    <input type="range" min={0} max={1} step={0.05} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-40 accent-gold-500" />
+    <input
+      type="range"
+      min={0}
+      max={1}
+      step={0.05}
+      value={value}
+      data-testid={testId}
+      aria-label={label}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="w-40 accent-gold-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-volt-400"
+    />
   </label>
 );
 
@@ -83,9 +93,12 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
         <Toggle label="Voix de l'annonceur et des rivaux" checked={s.announcer} onChange={(v) => settingsStore.set({ announcer: v })} testId="toggle-announcer" />
 
         <SectionTitle className="mt-4">Son & musique</SectionTitle>
-        <Slider label="Volume général" value={s.masterVolume} onChange={(v) => settingsStore.set({ masterVolume: v })} />
-        <Slider label="Effets (moteurs, freins…)" value={s.sfxVolume} onChange={(v) => settingsStore.set({ sfxVolume: v })} />
-        <Slider label="Musique" value={s.musicVolume} onChange={(v) => settingsStore.set({ musicVolume: v })} />
+        <Toggle label="Couper tout le son" checked={s.muted} onChange={(v) => settingsStore.set({ muted: v })} testId="toggle-mute" />
+        <Slider label="Volume général" value={s.masterVolume} onChange={(v) => settingsStore.set({ masterVolume: v })} testId="vol-master" />
+        <Slider label="Moteurs" value={s.engineVolume} onChange={(v) => settingsStore.set({ engineVolume: v })} testId="vol-engine" />
+        <Slider label="Effets (freins, chocs, boost…)" value={s.sfxVolume} onChange={(v) => settingsStore.set({ sfxVolume: v })} testId="vol-sfx" />
+        <Slider label="Musique" value={s.musicVolume} onChange={(v) => settingsStore.set({ musicVolume: v })} testId="vol-music" />
+        <Slider label="Chat vocal" value={s.voiceVolume} onChange={(v) => settingsStore.set({ voiceVolume: v })} testId="vol-voice" />
         <div className="mt-1 grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="Musique de fond" data-testid="music-list">
           {[{ id: 'shuffle', title: 'Aléatoire', mood: 'Toute la playlist' }, ...MUSIC_TRACKS, { id: 'off', title: 'Aucune', mood: 'Silence' }].map((t) => (
             <button
@@ -95,7 +108,7 @@ export const SettingsModal = ({ onClose }: { onClose: () => void }) => {
               aria-checked={s.musicTrack === t.id}
               data-testid={`music-${t.id}`}
               onClick={() => {
-                AudioEngine.ensure();
+                AudioEngine.unlock();
                 settingsStore.set({ musicTrack: t.id });
               }}
               className={`rounded-xl px-2 py-1.5 text-left transition-all active:scale-95 ${s.musicTrack === t.id ? 'bg-gold-500 text-night-950' : 'bg-night-950/55 hover:bg-night-800'}`}

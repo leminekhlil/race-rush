@@ -170,7 +170,7 @@ export const actions = {
 
   /** Quick race vs bots. Online (server-validated rewards) when possible, otherwise offline practice. */
   async playQuick(trackId: string): Promise<void> {
-    AudioEngine.ensure();
+    AudioEngine.unlock();
     appStore.set({ busy: true, trackId });
     const sel = currentSelection();
     if (appStore.get().profile && (await actions.ensureRealtime())) {
@@ -185,14 +185,14 @@ export const actions = {
   },
 
   async createLobby(opts: { trackId: string; laps: number; botFill: boolean }): Promise<void> {
-    AudioEngine.ensure();
+    AudioEngine.unlock();
     if (!(await actions.ensureRealtime())) return notify('Serveur multijoueur injoignable.', 'error');
     const sel = currentSelection();
     realtime.send({ t: 'lobby.create', trackId: opts.trackId, laps: opts.laps, botFill: opts.botFill, vehicle: sel.vehicle, color: sel.color });
   },
 
   async joinLobby(code: string): Promise<void> {
-    AudioEngine.ensure();
+    AudioEngine.unlock();
     const clean = code.trim().toUpperCase();
     if (!/^[A-Z0-9]{4}$/.test(clean)) return notify('Le code fait 4 caractères (ex. 7X9K).', 'error');
     if (!(await actions.ensureRealtime())) return notify('Serveur multijoueur injoignable.', 'error');

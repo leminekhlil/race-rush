@@ -38,6 +38,7 @@ export interface NowPlaying {
 }
 
 export const musicStore = createStore<NowPlaying>({ trackId: null, playing: false });
+if (typeof window !== 'undefined') (window as unknown as { __raceRushMusic: unknown }).__raceRushMusic = musicStore;
 
 const MAJOR = [0, 2, 4, 5, 7, 9, 11];
 const MINOR = [0, 2, 3, 5, 7, 8, 10];

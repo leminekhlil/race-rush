@@ -13,6 +13,11 @@ export interface Settings {
   timeOfDay: 'day' | 'night';
   musicVolume: number;
   sfxVolume: number;
+  /** Engines, tyres and wind (separate from effects). */
+  engineVolume: number;
+  /** Other players' voices (voice chat). */
+  voiceVolume: number;
+  muted: boolean;
   /** Selected background music id ('off' = silence, 'shuffle' = rotate the playlist). */
   musicTrack: string;
   /** Race announcer voice. */
@@ -36,6 +41,9 @@ const defaults = (): Settings => ({
   timeOfDay: 'day',
   musicVolume: 0.55,
   sfxVolume: 0.9,
+  engineVolume: 0.85,
+  voiceVolume: 1,
+  muted: false,
   musicTrack: 'shuffle',
   announcer: true,
   introSeen: false,

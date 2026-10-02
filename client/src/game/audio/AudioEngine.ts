@@ -1,6 +1,7 @@
 import { clamp, type VehicleTuning } from '@race-rush/shared';
 import { settingsStore } from '../../state/settings';
 import { assetUrl } from '../assets/assetUrl';
+import { createStore } from '../../state/store';
 
 /**
  * Web Audio mixer: master → (sfx bus, music bus, voice bus) → compressor.
@@ -12,9 +13,26 @@ import { assetUrl } from '../assets/assetUrl';
 type SampleName = 'engine' | 'engine-motorcycle' | 'skid' | 'impact';
 const SAMPLES: SampleName[] = ['engine', 'engine-motorcycle', 'skid', 'impact'];
 
+export type AudioStatus = 'idle' | 'locked' | 'running' | 'unavailable';
+
+/** Observable audio state for the UI ("tap to enable sound" chip, diagnostics). */
+export const audioStatus = createStore<{ status: AudioStatus; samples: number; error: string | null }>({ status: 'idle', samples: 0, error: null });
+
+const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
+
+/** 0.1 s of silence (WAV) played through an <audio> element: switches iOS to the "playback" audio session. */
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAACAgICA';
+
+/**
+ * Single AudioContext for the whole game (AudioManager role): buses master → (engine, sfx, music, voice) →
+ * compressor; unlock on the first user gesture (Chrome / Safari / iOS autoplay policies), suspend when the tab is
+ * hidden, mute, sample loading with codec fallback and diagnostics.
+ */
 class AudioEngineImpl {
   ctx: AudioContext | null = null;
   master: GainNode | null = null;
+  engine: GainNode | null = null;
   sfx: GainNode | null = null;
   music: GainNode | null = null;
   voice: GainNode | null = null;
@@ -22,21 +40,46 @@ class AudioEngineImpl {
   private buffers = new Map<SampleName, AudioBuffer>();
   private loading: Promise<void> | null = null;
   private unlockListeners = new Set<() => void>();
+  private unlocked = false;
+  private duckLevel = 1;
+  private silentEl: HTMLAudioElement | null = null;
 
+  constructor() {
+    if (typeof window === 'undefined') return;
+    const onGesture = () => this.unlock();
+    for (const g of GESTURES) window.addEventListener(g, onGesture, { capture: true, passive: true });
+    this.removeGestureListeners = () => GESTURES.forEach((g) => window.removeEventListener(g, onGesture, { capture: true }));
+    document.addEventListener('visibilitychange', () => {
+      const ctx = this.ctx;
+      if (!ctx) return;
+      if (document.hidden) void ctx.suspend().catch(() => undefined);
+      else if (this.unlocked) void ctx.resume().catch(() => undefined);
+    });
+    (window as unknown as { __raceRushAudio: unknown }).__raceRushAudio = this;
+  }
+
+  private removeGestureListeners: () => void = () => undefined;
+
+  /** Creates the context (idempotent). Safe to call outside a gesture: it then stays "locked" until one happens. */
   ensure(): AudioContext | null {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      if (this.ctx.state === 'suspended' && this.unlocked && !document.hidden) void this.ctx.resume().catch(() => undefined);
       return this.ctx;
     }
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!Ctor) return null;
+    if (!Ctor) {
+      audioStatus.set({ status: 'unavailable', error: 'Web Audio non supporté' });
+      return null;
+    }
     try {
       this.ctx = new Ctor({ latencyHint: 'interactive' });
-    } catch {
+    } catch (e) {
+      audioStatus.set({ status: 'unavailable', error: String(e) });
       return null;
     }
     const ctx = this.ctx;
     this.master = ctx.createGain();
+    this.engine = ctx.createGain();
     this.sfx = ctx.createGain();
     this.music = ctx.createGain();
     this.voice = ctx.createGain();
@@ -44,31 +87,96 @@ class AudioEngineImpl {
     comp.threshold.value = -12;
     comp.ratio.value = 4;
     comp.attack.value = 0.004;
+    this.engine.connect(this.master);
     this.sfx.connect(this.master);
     this.music.connect(this.master);
     this.voice.connect(this.master);
     this.master.connect(comp).connect(ctx.destination);
-    const apply = () => {
-      const s = settingsStore.get();
-      this.master!.gain.value = s.masterVolume;
-      this.sfx!.gain.value = s.sfxVolume;
-      this.music!.gain.value = s.musicVolume;
-      this.voice!.gain.value = Math.min(1, s.sfxVolume * 1.1);
-    };
-    apply();
-    settingsStore.subscribe(apply);
-    ctx.addEventListener?.('statechange', () => {
-      if (ctx.state === 'running') this.unlockListeners.forEach((f) => f());
-    });
+    this.applyVolumes();
+    settingsStore.subscribe(() => this.applyVolumes());
+    ctx.addEventListener?.('statechange', () => this.onState());
+    this.onState();
     void this.preload();
     return ctx;
   }
 
-  /** Called when the context starts running (after the first user gesture). */
+  /** Called from user gestures: resumes the context and primes iOS (silent element, audio session, speech). */
+  unlock(): void {
+    const ctx = this.ensure();
+    if (!ctx) return;
+    this.unlocked = true;
+    try {
+      const nav = navigator as Navigator & { audioSession?: { type: string } };
+      if (nav.audioSession) nav.audioSession.type = 'playback';
+    } catch {
+      /* not supported */
+    }
+    if (!this.silentEl) {
+      try {
+        this.silentEl = new Audio(SILENT_WAV);
+        this.silentEl.setAttribute('playsinline', '');
+        this.silentEl.loop = false;
+        void this.silentEl.play().catch(() => undefined);
+      } catch {
+        /* ignore */
+      }
+      // A one-sample buffer started inside the gesture fully unlocks older WebKit.
+      const b = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = b;
+      src.connect(ctx.destination);
+      src.start(0);
+      try {
+        if ('speechSynthesis' in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+      } catch {
+        /* ignore */
+      }
+    }
+    if (ctx.state !== 'running') {
+      void ctx
+        .resume()
+        .then(() => this.onState())
+        .catch((e) => audioStatus.set({ error: String(e) }));
+    } else this.onState();
+  }
+
+  private onState(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const running = ctx.state === 'running';
+    audioStatus.set({ status: running ? 'running' : 'locked' });
+    if (running && this.unlocked) {
+      this.removeGestureListeners();
+      this.unlockListeners.forEach((f) => f());
+    }
+  }
+
+  private applyVolumes(): void {
+    if (!this.master) return;
+    const s = settingsStore.get();
+    const t = this.ctx!.currentTime;
+    this.master.gain.setTargetAtTime(s.muted ? 0 : s.masterVolume, t, 0.03);
+    this.engine!.gain.setTargetAtTime(s.engineVolume * (0.55 + 0.45 * this.duckLevel), t, 0.15);
+    this.sfx!.gain.setTargetAtTime(s.sfxVolume, t, 0.03);
+    this.music!.gain.setTargetAtTime(s.musicVolume, t, 0.03);
+    this.voice!.gain.setTargetAtTime(s.voiceVolume, t, 0.03);
+  }
+
+  /** Lowers engines a little while someone speaks in voice chat (1 = no ducking). */
+  duckEngines(level: number): void {
+    this.duckLevel = level;
+    this.applyVolumes();
+  }
+
+  /** Called when the context is running after a user gesture. */
   onUnlock(f: () => void): () => void {
     this.unlockListeners.add(f);
-    if (this.ctx?.state === 'running') f();
+    if (this.ctx?.state === 'running' && this.unlocked) f();
     return () => this.unlockListeners.delete(f);
+  }
+
+  get isRunning(): boolean {
+    return this.ctx?.state === 'running';
   }
 
   /** Decodes the CC0 samples (OGG, AAC fallback for browsers without Vorbis). */
@@ -81,11 +189,17 @@ class AudioEngineImpl {
         try {
           const r = await fetch(assetUrl(`audio/${name}.${ext}`));
           if (!r.ok) continue;
-          const buf = await ctx.decodeAudioData(await r.arrayBuffer());
+          const data = await r.arrayBuffer();
+          // Callback form for older WebKit (no promise-based decodeAudioData).
+          const buf = await new Promise<AudioBuffer>((resolve, reject) => {
+            const p = ctx.decodeAudioData(data, resolve, reject);
+            if (p && typeof (p as Promise<AudioBuffer>).then === 'function') (p as Promise<AudioBuffer>).then(resolve, reject);
+          });
           this.buffers.set(name, buf);
+          audioStatus.set({ samples: this.buffers.size });
           return;
-        } catch {
-          /* try the next codec */
+        } catch (e) {
+          audioStatus.set({ error: `${name}.${ext}: ${String(e)}` });
         }
       }
     };
@@ -250,7 +364,7 @@ export class VehicleAudio {
     volume = 1,
   ) {
     const ctx = AudioEngine.ensure();
-    const bus = AudioEngine.sfx;
+    const bus = AudioEngine.engine;
     const noise = AudioEngine.noise();
     if (!ctx || !bus || !noise) return;
     this.out = ctx.createGain();
