@@ -114,16 +114,17 @@ Aucune tâche cron ni file d'attente n'est requise (`QUEUE_CONNECTION=sync`).
 
 ---
 
-## 8. Temps réel, WebSocket, WebRTC — limitations de l'hébergement mutualisé
+## 8. Temps réel — serveur séparé et application Node Hostinger
 
 - Ce déploiement **PHP/HWS** ne fournit pas le processus Node.js persistant ni les connexions WebSocket
   entrantes nécessaires au serveur de course (voir `deploy/realtime/README.md` pour les autres offres). Le paquet est donc livré avec `config.js` → `realtimeUrl: ''` :
   - ✅ fonctionnent : jeu complet en solo (course contre 4 bots, City + Desert), garage 3D, achats/améliorations
     avec la monnaie virtuelle v-MRU (validés par l'API Laravel), comptes invités, audio, PWA/hors ligne ;
-  - ⛔ désactivés proprement (message « bientôt disponibles ») : création/rejoindre une partie multijoueur,
+  - ⛔ désactivés proprement (message « serveur de course non configuré ») : création/rejoindre une partie multijoueur,
     **chat vocal** (la signalisation WebRTC passe par le serveur temps réel), et **récompenses de course** (XP/v-MRU
     attribués uniquement par le serveur à partir de la course validée — jamais par le client).
-- Pour activer multijoueur + récompenses + voice : déployer `realtime-server/` sur un petit VPS (voir
+- Le 02/10/2026, l’application Node gérée du plan Business existant a été validée : WebSocket entrant, deux joueurs authentifiés et départ de course synchronisé. On conserve le site PHP et Laravel. Voir `deploy/realtime/hostinger/README.md` et `scripts/build-hostinger-realtime.mjs`.
+- Une autre option est de déployer `realtime-server/` sur un petit VPS (voir
   `realtime-server/README.md`), puis `public_html/config.js` → `realtimeUrl: 'wss://rt.racerush.pro.mr/ws'` et
   le même secret dans `racerush-app/.env` (`RACERUSH_REALTIME_SECRET`). Aucun rebuild nécessaire.
 - **TURN** : non fourni. Le voice chat utilise STUN public ; derrière certains NAT stricts (réseaux d'entreprise,

@@ -24,4 +24,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET' && ($_SERVER['REQUEST_METHOD
     exit;
 }
 header('Content-Type: text/html; charset=utf-8');
-readfile(__DIR__.'/app-shell.html');
+// Hostinger caches static JS for a year; refresh runtime config after each edit.
+$html = file_get_contents(__DIR__.'/app-shell.html');
+$configVersion = (string) filemtime(__DIR__.'/config.js');
+echo preg_replace('~src="\./config\.js(?:\?[^"]*)?"~', 'src="./config.js?v='.$configVersion.'"', $html);

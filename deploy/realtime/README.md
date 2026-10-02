@@ -1,25 +1,16 @@
-# Race Rush — realtime server (optional, VPS)
+# Race Rush — realtime server (managed Node or VPS)
 
 The Race Rush **PHP/HWS deployment** does not run this persistent Node.js WebSocket server. Multiplayer lobbies, server-validated
 rewards (XP / v-MRU) and voice-chat signalling need this server. Until it is deployed, the site works in solo mode
 (offline races against bots, no rewards) and disables multiplayer / voice.
 
-Hostinger now offers separate managed Node.js apps on Business and Cloud plans; lack of Node in the PHP SSH
-environment does not mean every Hostinger product lacks Node support. However, Node support alone is not enough:
-this server needs incoming HTTPS/WebSocket connections and a persistent process. Verify those capabilities for
-the exact product before configuring `realtimeUrl`. Hostinger's Web/Cloud connectivity documentation currently
-describes outgoing-only WebSockets. A VPS or a managed service explicitly supporting incoming WebSockets is
-the deployment option supported by this guide. Keep Laravel and the frontend on Hostinger.
+Hostinger managed Node apps on the user's existing Business plan were tested successfully on 2026-10-02 with incoming WSS and two authenticated Race Rush players. For that deployment, use [the managed Node package and instructions](hostinger/README.md). A separate Node app runs alongside the PHP site; the frontend and Laravel do not need migration. The generic shared-hosting limitations do not describe this tested managed app.
 
-References (checked 2026-10-02):
-- https://www.hostinger.com/support/how-to-deploy-a-nodejs-website-in-hostinger/
-- https://www.hostinger.com/support/which-web-standards-and-connectivity-features-are-supported-at-hostinger/
-
-## Requirements
+## VPS alternative: requirements
 - Small VPS (1 vCPU / 1 GB is enough for a few lobbies), Node.js 20+, a sub-domain such as `rt.racerush.pro.mr`
   pointing to it, TLS (browsers on HTTPS only accept `wss://`).
 
-## Install
+## VPS alternative: install
 `server.mjs` is a single self-contained bundle (no `npm install` needed).
 ```bash
 mkdir -p ~/racerush-realtime && cd ~/racerush-realtime
