@@ -20,6 +20,14 @@ export class RealtimeServer {
 
   constructor() {
     this.http = createServer((req, res) => {
+      const origin = req.headers.origin;
+      if (config.allowedOrigins.length && origin && !config.allowedOrigins.includes(origin)) {
+        res.writeHead(403); res.end(); return;
+      }
+      if (origin && config.allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
+      }
       if (req.url === '/health' || req.url === '/ws/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true, lobbies: this.lobbies.size, clients: this.clients.size }));
@@ -30,7 +38,9 @@ export class RealtimeServer {
     });
     this.wss = new WebSocketServer({ noServer: true, maxPayload: 16384 });
     this.http.on('upgrade', (req, socket, head) => {
-      if (!req.url?.startsWith('/ws')) {
+      if (req.url?.split('?')[0] !== '/ws' ||
+          (config.allowedOrigins.length && req.headers.origin && !config.allowedOrigins.includes(req.headers.origin))) {
+        socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
         socket.destroy();
         return;
       }

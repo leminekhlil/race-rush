@@ -18,9 +18,11 @@ export const config = {
   port: Number(process.env.PORT ?? 8090),
   host: process.env.HOST ?? '0.0.0.0',
   apiUrl: (process.env.API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, ''),
-  secret: process.env.RACERUSH_REALTIME_SECRET ?? readBackendEnv('RACERUSH_REALTIME_SECRET') ?? '',
+  secret: process.env.RACERUSH_REALTIME_SECRET ?? (process.env.NODE_ENV !== 'production' ? readBackendEnv('RACERUSH_REALTIME_SECRET') : undefined) ?? '',
+  /** Browser origins allowed to read health and open WebSockets. Empty only for local dev. */
+  allowedOrigins: (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   /** Allows ticket-less connections (no rewards). Useful for local dev without the API. */
-  allowAnonymous: (process.env.ALLOW_ANONYMOUS ?? 'true') === 'true',
+  allowAnonymous: (process.env.ALLOW_ANONYMOUS ?? (process.env.NODE_ENV === 'production' ? 'false' : 'true')) === 'true',
   /** Voice chat (WebRTC). STUN is public; TURN credentials are minted per client (coturn `use-auth-secret`). */
   stunUrls: (process.env.VOICE_STUN_URLS ?? 'stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302').split(',').map((s) => s.trim()).filter(Boolean),
   turnUrls: (process.env.VOICE_TURN_URLS ?? '').split(',').map((s) => s.trim()).filter(Boolean),

@@ -8,4 +8,6 @@
  */
 window.RACE_RUSH_CONFIG = {
   realtimeUrl: 'auto',
+  // Enable for a cloud service that sleeps when idle.
+  realtimeWarmup: false,
 };
