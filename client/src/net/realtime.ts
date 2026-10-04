@@ -9,6 +9,7 @@ import {
 import type { RaceNetAdapter } from '../game/race/RaceSession';
 import { netBridge } from './raceBridge';
 import { VoiceChat } from './voice/VoiceChat';
+import { warmRealtime } from './warmup';
 
 export interface RealtimeHandlers {
   onLobby(lobby: LobbyDTO | null): void;
@@ -20,7 +21,7 @@ export interface RealtimeHandlers {
 
 declare global {
   interface Window {
-    RACE_RUSH_CONFIG?: { realtimeUrl?: string };
+    RACE_RUSH_CONFIG?: { realtimeUrl?: string; realtimeWarmup?: boolean };
   }
 }
 
@@ -54,9 +55,14 @@ export class RealtimeClient implements RaceNetAdapter {
     return this.ws?.readyState === WebSocket.OPEN && !!this.id;
   }
 
-  connect(ticket: string | null, name: string): Promise<void> {
-    if (this.connected) return Promise.resolve();
+  async connect(ticket: string | null, name: string): Promise<void> {
+    if (this.connected) return;
     this.closedByUs = false;
+    const endpoint = realtimeUrl();
+    if (endpoint && window.RACE_RUSH_CONFIG?.realtimeWarmup) {
+      await warmRealtime(endpoint);
+      if (this.closedByUs) throw new Error('connection cancelled');
+    }
     return new Promise((resolve, reject) => {
       let settled = false;
       const url = realtimeUrl();

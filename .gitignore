@@ -1,5 +1,7 @@
 node_modules/
 dist/
+dist-realtime/
+dist-hostinger-realtime/
 .env
 .env.*
 !.env.example
