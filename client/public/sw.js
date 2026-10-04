@@ -3,7 +3,7 @@
  * - Hashed build assets, fonts, icons: cache-first (immutable).
  * - Never cached: /api/* (accounts, rewards) and /ws (realtime) — dynamic multiplayer data stays live.
  */
-const VERSION = 'rr-beta-20261002-audio-session';
+const VERSION = 'rr-beta-20261004-render';
 const SHELL = `${VERSION}-shell`;
 const STATIC = `${VERSION}-static`;
 const SHELL_URLS = ['./', './manifest.webmanifest', './fonts/fonts.css', './fonts/RussoOne-400.woff2', './fonts/Rajdhani-600.woff2', './fonts/Rajdhani-700.woff2', './app-icons/icon-192.png'];
